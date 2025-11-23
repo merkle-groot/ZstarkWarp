@@ -1,23 +1,32 @@
 use starknet::{ContractAddress, SyscallResultTrait};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
+use zstarkwarp::mocks::merkle_tree_mock_interface::{
+    IMerkleTreeMockDispatcher, 
+    IMerkleTreeMockDispatcherTrait
+};
 use zstarkwarp::merkle_tree::merkle_tree_interface::{
-    IIncrementalMerkleTreeDispatcher, 
+    IIncrementalMerkleTreeDispatcher,
     IIncrementalMerkleTreeDispatcherTrait
 };
 
-fn deploy_contract(name: ByteArray) -> ContractAddress {
+fn deploy_contract(name: ByteArray, calldata: @Array<felt252>) -> ContractAddress {
     let contract = declare(name).unwrap_syscall().contract_class();
-    let (contract_address, _) = contract.deploy(@ArrayTrait::new()).unwrap_syscall();
+    let (contract_address, _) = contract.deploy(calldata).unwrap_syscall();
     contract_address
 }
 
 #[test]
 fn test_increase_balance() {
-    let contract_address = deploy_contract("MerkleTreeMock");
+    let mut calldata = ArrayTrait::new();
+    let arguments = array![3];
+    arguments.serialize(ref calldata);
+    let contract_address = deploy_contract("MerkleTreeMock", @calldata);
 
-    let dispatcher = IIncrementalMerkleTreeDispatcher { contract_address };
-    dispatcher.add_root(123);
-    assert!(dispatcher.get_current_root() == 123, "incorrect root");
+    let mock_dispatcher = IMerkleTreeMockDispatcher { contract_address };
+    let imt_dispatcher = IIncrementalMerkleTreeDispatcher { contract_address };
+    assert!(imt_dispatcher.get_current_root() == 0x20121ee811489ff8d61f09fb89e313f14959a0f28bb428a20dba6b0b068b3bdb_u256);
+    // dispatcher.add_root(123);
+    // assert!(dispatcher.get_current_root() == 123, "incorrect root");
     // let x = 13;
     // assert!(x/2 == 0, "x = {x:?}");
 

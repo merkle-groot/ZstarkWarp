@@ -6,6 +6,7 @@ pub mod IncrementalMerkleTreeComponent {
     use super::IIncrementalMerkleTree;
     use garaga::hashes::poseidon_hash_2_bn254;
     use garaga::definitions::u384;
+    // use core::num::traits::Pow;
 
     use starknet::storage::{
         Map,
@@ -17,8 +18,7 @@ pub mod IncrementalMerkleTreeComponent {
         StoragePointerWriteAccess
     };
 
-    const height: u64 = 32;
-    const max_leaves: u64 = 4294967295;
+    const END_POINTER: u256 = 1337;
 
     // u32 works for all the cases here; u64 used for cleaner indexing
     #[storage]
@@ -27,7 +27,8 @@ pub mod IncrementalMerkleTreeComponent {
         leaves: Map<u64, u256>,
         current_root: u256,
         current_index: u64,
-        level_hashes: Vec<u256>
+        level_hashes: Vec<u256>,
+        height: u64
     }
 
 
@@ -58,12 +59,25 @@ pub mod IncrementalMerkleTreeComponent {
         }
 
         fn is_valid_root(self: @ComponentState<TContractState>, root: u256) -> bool{
-            return self.roots.entry(root).read() != 0_u256;
+            self.roots.entry(root).read() != 0_u256
         }
     }
 
     #[generate_trait]
-    impl InternalFunctions<TContractState, +HasComponent<TContractState>> of IncrementalMerkleTreeInternal<TContractState> {
+    pub impl IncrementalMerkleTreeInternalImpl<TContractState, +HasComponent<TContractState>> of IncrementalMerkleTreeInternalTrait<TContractState> {
+        fn _merkle_tree_constructor(ref self: ComponentState<TContractState>, height: u64) {
+            let level = 0;
+            self.height.write(height);
+            while level < height {
+                self.level_hashes.push(self._get_zero_root(level));
+            }
+
+            let root = self._get_zero_root(height);
+            self.roots.entry(END_POINTER).write(root);
+            self.roots.entry(root).write(END_POINTER);
+
+        }
+
         fn _hash(self: @ComponentState<TContractState>, left: u256, right: u256) -> u256 {
             // Convert u256 to u384
             let left_u384: u384 = left.into();
@@ -77,15 +91,17 @@ pub mod IncrementalMerkleTreeComponent {
         fn _add_leaf(ref self: ComponentState<TContractState>, leaf: u256) {
             // add the leaf to the merkle tree
             let mut index = self.current_index.read();
-            assert!(index < max_leaves, "IMT: crossed max leaves");
+            let height: u64 = self.height.read();
+            // TODO: Add a limit
+            // assert!(index < 2_u.pow(height), "IMT: crossed max leaves");
             self.leaves.entry(index).write(leaf);
             self.current_index.write(index + 1);
 
             // update the levelhashes and the root
-            let mut current_level: u64 = 0;
-            let mut current_hash: u256 = leaf;
-            let mut left: u256 = 0_u256;
-            let mut right: u256 = 0_u256;
+            let mut current_level = 0;
+            let mut current_hash= leaf;
+            let mut left = 0_u256;
+            let mut right = 0_u256;
             
             while(current_level < height) {
                 if index % 2 == 0 {
@@ -106,6 +122,7 @@ pub mod IncrementalMerkleTreeComponent {
             let previous_root = self.current_root.read();
             self.current_root.write(current_hash);
             self.roots.entry(previous_root).write(current_hash);
+            self.roots.entry(current_hash).write(END_POINTER);
         }
 
         fn _get_zero_root(self: @ComponentState<TContractState>, level: u64) -> u256 {
