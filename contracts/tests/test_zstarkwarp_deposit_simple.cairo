@@ -1,182 +1,216 @@
-use starknet::{ContractAddress, SyscallResultTrait};
-use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, EventSpy};
+use starknet::{contract_address_const, ContractAddress, SyscallResultTrait};
+use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address};
+use snforge_std::Event;
 use zstarkwarp::zstarkwarp_deposit_interface::{IZstarkWarpDepositDispatcher, IZstarkWarpDepositDispatcherTrait};
+use zstarkwarp::zstarkwarp_deposit_interface::{IZstarkWarpDepositSafeDispatcher, IZstarkWarpDepositSafeDispatcherTrait};
 use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
+use zstarkwarp::mocks::usdc_token_interface::{IUSDCTokenDispatcher, IUSDCTokenDispatcherTrait};
+use zstarkwarp::merkle_tree::merkle_tree_interface::{IMerkleTreeDispatcher, IMerkleTreeDispatcherTrait};
 
-fn deploy_contract(name: ByteArray, calldata: @Array<felt252>) -> ContractAddress {
-    let contract = declare(name).unwrap_syscall().contract_class();
-    let (contract_address, _) = contract.deploy(calldata).unwrap_syscall();
+// use snforge_std::{start_prank, stop_prank, CheatTarget};
+
+fn get_owner_address() -> ContractAddress {
+    contract_address_const::<1000>()
+}
+
+fn get_alice_address() -> ContractAddress {
+    contract_address_const::<1001>()
+}
+
+fn get_bob_address() -> ContractAddress {
+    contract_address_const::<1002>()
+}
+
+fn deploy_zstarkWarp_contract(height: u64, usdc_address: ContractAddress, usdc_amount: u256) -> ContractAddress {
+    let mut calldata = ArrayTrait::new();
+    height.serialize(ref calldata);
+    usdc_address.serialize(ref calldata);
+    usdc_amount.serialize(ref calldata);
+
+    let contract = declare("ZstarkWarpDeposit").unwrap_syscall().contract_class();
+    let (contract_address, _) = contract.deploy(@calldata).unwrap_syscall();
     contract_address
+}
+
+fn deploy_mock_usdc_contract(owner: ContractAddress, amount: u256) -> ContractAddress {
+    let mut calldata = ArrayTrait::new();
+    owner.serialize(ref calldata);
+    amount.serialize(ref calldata);
+    let contract = declare("UsdcMock").unwrap_syscall().contract_class();
+    let (contract_address, _) = contract.deploy(@calldata).unwrap_syscall();
+    contract_address
+}
+
+
+fn approve_usdc(user: ContractAddress, zstarkwarp_address: ContractAddress, usdc_address: ContractAddress, amount: u256){
+    // Start cheating
+    start_cheat_caller_address(usdc_address, user);
+    let usdc_dispatcher = IUSDCTokenDispatcher{ contract_address: usdc_address };
+    usdc_dispatcher.approve(zstarkwarp_address, amount);
+    stop_cheat_caller_address(usdc_address);
+}
+
+fn mint_usdc(user: ContractAddress, usdc_address: ContractAddress) {
+    let usdc_dispatcher = IUSDCTokenDispatcher{ contract_address: usdc_address };
+    usdc_dispatcher.mint_user(user);
 }
 
 #[test]
 fn test_constructor_deployment() {
     // Deploy ZstarkWarpDeposit contract with minimal setup
-    let mut calldata = ArrayTrait::new();
     let height = 32_u64;
-    let token_address: ContractAddress = 0x1.try_into().unwrap();
-    let token_amount = 1000000000000000000_u256; // 1 USDC with 18 decimals
+    let usdc_address: ContractAddress = 0x1.try_into().unwrap();
+    let usdc_amount = 100000000000000000000_u256; // 100 USDC with 18 decimals
 
-    height.serialize(ref calldata);
-    token_address.serialize(ref calldata);
-    token_amount.serialize(ref calldata);
-
-    let contract_address = deploy_contract("ZstarkWarpDeposit", @calldata);
+    let contract_address = deploy_zstarkWarp_contract(height, usdc_address, usdc_amount);
     let dispatcher = IZstarkWarpDepositDispatcher { contract_address };
 
     // Test that contract was deployed successfully
     let zero_address: ContractAddress = 0.try_into().unwrap();
     assert!(contract_address != zero_address);
-}
-
-#[test]
-fn test_is_exist_commitment_function() {
-    // Deploy ZstarkWarpDeposit contract
-    let mut calldata = ArrayTrait::new();
-    let height = 32_u64;
-    let token_address: ContractAddress = 0x1.try_into().unwrap();
-    let token_amount = 1000000000000000000_u256;
-
-    height.serialize(ref calldata);
-    token_address.serialize(ref calldata);
-    token_amount.serialize(ref calldata);
-
-    let contract_address = deploy_contract("ZstarkWarpDeposit", @calldata);
-    let dispatcher = IZstarkWarpDepositDispatcher { contract_address };
-
-    // Test that non-existent commitment returns false
-    let non_existent_commitment = 0x9999999999999999_u256;
-    assert!(!dispatcher.is_exist_commitment(non_existent_commitment));
-
-    // Test that zero commitment returns false initially
-    let zero_commitment = 0_u256;
-    assert!(!dispatcher.is_exist_commitment(zero_commitment));
-
-    // Test another random commitment
-    let random_commitment = 0x1234567890abcdef_u256;
-    assert!(!dispatcher.is_exist_commitment(random_commitment));
+    assert!(dispatcher.get_token_details() == (usdc_address, usdc_amount), "Invalid token details");
 }
 
 #[test]
 fn test_zstarkwarp_deposit_interface_methods() {
     // Deploy ZstarkWarpDeposit contract
-    let mut calldata = ArrayTrait::new();
     let height = 32_u64;
-    let token_address: ContractAddress = 0x1.try_into().unwrap();
-    let token_amount = 1000000000000000000_u256;
+    let usdc_amount = 1000000000000000000_u256; // 100 USDC with 18 decimals
 
-    height.serialize(ref calldata);
-    token_address.serialize(ref calldata);
-    token_amount.serialize(ref calldata);
+    let usdc_address = deploy_mock_usdc_contract(get_owner_address(), usdc_amount);
+    let usdc_dispatcher = IUSDCTokenDispatcher { contract_address: usdc_address };
 
-    let contract_address = deploy_contract("ZstarkWarpDeposit", @calldata);
-    let dispatcher = IZstarkWarpDepositDispatcher { contract_address };
+    let zstarkwarp_address = deploy_zstarkWarp_contract(height, usdc_address, usdc_amount);
+    let zstarkwarp_dispatcher = IZstarkWarpDepositDispatcher { contract_address: zstarkwarp_address };
+    let merkle_tree_dispatcher = IMerkleTreeDispatcher {contract_address: zstarkwarp_address };
 
-    // Test that we can call the interface methods (even if they might fail due to token setup)
-    let user: ContractAddress = 'user'.try_into().unwrap();
-    let commitment = 0x1111111111111111_u256;
+    // mint usdc tokens to alice
+    let alice = get_alice_address();
+    mint_usdc(alice, usdc_address);
+    assert!(usdc_dispatcher.balance_of(alice) == usdc_amount, "Not enough usdc minted");
+    approve_usdc(alice, zstarkwarp_address, usdc_address, usdc_amount);
+    assert!(usdc_dispatcher.allowance(alice, zstarkwarp_address) == usdc_amount, "approval not enough");
 
-    // Note: These calls will likely fail due to token setup, but they test the interface
-    // The fact that they compile and can be called validates the interface structure
-    // dispatcher.deposit(user, commitment); // Would fail due to token setup
+    // deposit in the contract
+    let commitment = 0x123_u256;
+    let root_before = merkle_tree_dispatcher.get_current_root();
+    zstarkwarp_dispatcher.deposit(alice, commitment);
 
-    // Test is_exist_commitment method - this should work
-    assert!(!dispatcher.is_exist_commitment(commitment));
+    // Check if the commitment is added
+    let root_after = merkle_tree_dispatcher.get_current_root();
+    assert!(zstarkwarp_dispatcher.is_exist_commitment(commitment));
+    assert!(root_before != root_after, "root has not changed");
 }
 
 #[test]
-fn test_commitment_values() {
-    // Deploy ZstarkWarpDeposit contract
-    let mut calldata = ArrayTrait::new();
+#[feature("safe_dispatcher")]
+fn test_deposit_failures() {
     let height = 32_u64;
-    let token_address: ContractAddress = 0x1.try_into().unwrap();
-    let token_amount = 1000000000000000000_u256;
+    let usdc_amount = 1000000000000000000_u256; // 100 USDC with 18 decimals
 
-    height.serialize(ref calldata);
-    token_address.serialize(ref calldata);
-    token_amount.serialize(ref calldata);
+    let usdc_address = deploy_mock_usdc_contract(get_owner_address(), usdc_amount);
+    let zstarkwarp_address = deploy_zstarkWarp_contract(height, usdc_address, usdc_amount);
 
-    let contract_address = deploy_contract("ZstarkWarpDeposit", @calldata);
-    let dispatcher = IZstarkWarpDepositDispatcher { contract_address };
+    // Use Safe dispatcher for testing failures
+    let safe_dispatcher = IZstarkWarpDepositSafeDispatcher {
+        contract_address: zstarkwarp_address
+    };
 
-    // Test various commitment values that should be valid (even if deposit fails)
-    let test_commitments = array![
-        0_u256,                    // zero commitment
-        1337_u256,                 // specified test value
-        0x1234567890abcdef_u256,   // random value
-        0xbeef_u256,               // another test value
-        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256,  // maximum u256 value
-    ];
+    let alice = get_alice_address();
 
-    let mut i = 0;
-    while i < test_commitments.len() {
-        let commitment = *test_commitments.at(i);
-        // All these should return false initially since no deposits have been made
-        assert!(!dispatcher.is_exist_commitment(commitment));
-        i = i + 1;
+    // Test 1: Deposit without approval should fail
+    let commitment = 0x123_u256;
+    mint_usdc(alice, usdc_address);
+    let result = safe_dispatcher.deposit(alice, commitment);
+
+    assert!(result.is_err(), "Expected deposit to fail without approval");
+    match result {
+        Result::Ok(_) => panic!("Should have failed"),
+        Result::Err(_) => {} // Expected to fail
     }
+
+    // Test 2: Deposit without balance should fail
+    // Burn the tokens so alice has no balance
+    start_cheat_caller_address(usdc_address, alice);
+    let usdc_dispatcher = IUSDCTokenDispatcher { contract_address: usdc_address };
+    usdc_dispatcher.burn(usdc_amount);
+    stop_cheat_caller_address(usdc_address);
+
+    let result = safe_dispatcher.deposit(alice, commitment);
+    assert!(result.is_err(), "Expected deposit to fail without balance");
+
+    // Test 3: Mint tokens and do first successful deposit
+    mint_usdc(alice, usdc_address);
+    approve_usdc(alice, zstarkwarp_address, usdc_address, usdc_amount);
+
+    // This should work
+    let dispatcher = IZstarkWarpDepositDispatcher { contract_address: zstarkwarp_address };
+    dispatcher.deposit(alice, commitment);
+    assert!(dispatcher.is_exist_commitment(commitment));
+
+    // Test 4: Duplicate commitment should fail
+    mint_usdc(alice, usdc_address);
+    approve_usdc(alice, zstarkwarp_address, usdc_address, usdc_amount);
+
+    let result = safe_dispatcher.deposit(alice, commitment);
+    assert!(result.is_err(), "Expected duplicate commitment to fail");
+    match result {
+        Result::Ok(_) => panic!("Duplicate commitment should have failed"),
+        Result::Err(_) => {} // Expected to fail
+    }
+
+    // Test 5: Verify commitment 0 and 1337 should fail (validation in _add_leaf)
+    let zero_commitment = 0_u256;
+    let commitment_1337 = 1337_u256;
+
+    // Test commitment 0 should fail
+    mint_usdc(alice, usdc_address);
+    approve_usdc(alice, zstarkwarp_address, usdc_address, usdc_amount);
+    let result = safe_dispatcher.deposit(alice, zero_commitment);
+    assert!(result.is_err(), "Expected commitment 0 to fail");
+
+    // Test commitment 1337 should fail
+    mint_usdc(alice, usdc_address);
+    approve_usdc(alice, zstarkwarp_address, usdc_address, usdc_amount);
+    let result = safe_dispatcher.deposit(alice, commitment_1337);
+    assert!(result.is_err(), "Expected commitment 1337 to fail");
 }
 
 #[test]
-fn test_different_heights() {
-    // Test deployment with different tree heights
-    let heights = array![1_u64, 8_u64, 16_u64, 32_u64];
+fn test_deposit_event_emission() {
+    let height = 32_u64;
+    let usdc_amount = 1000000000000000000_u256; // 100 USDC with 18 decimals
 
-    let mut i = 0;
-    while i < heights.len() {
-        let height = heights[i];
+    let usdc_address = deploy_mock_usdc_contract(get_owner_address(), usdc_amount);
+    let zstarkwarp_address = deploy_zstarkWarp_contract(height, usdc_address, usdc_amount);
+    let zstarkwarp_dispatcher = IZstarkWarpDepositDispatcher { contract_address: zstarkwarp_address };
 
-        let mut calldata = ArrayTrait::new();
-        let token_address: ContractAddress = 0x1.try_into().unwrap();
-        let token_amount = 1000000000000000000_u256;
+    // Set up event spy to capture all events
+    let mut spy = spy_events();
 
-        height.serialize(ref calldata);
-        token_address.serialize(ref calldata);
-        token_amount.serialize(ref calldata);
+    // Get alice and give her tokens
+    let alice = get_alice_address();
+    mint_usdc(alice, usdc_address);
+    approve_usdc(alice, zstarkwarp_address, usdc_address, usdc_amount);
 
-        let contract_address = deploy_contract("ZstarkWarpDeposit", @calldata);
-        let dispatcher = IZstarkWarpDepositDispatcher { contract_address };
+    // Make a deposit - this should emit a DepositEvent
+    let commitment = 0x99999_u256;
+    zstarkwarp_dispatcher.deposit(alice, commitment);
 
-        // Test that contract was deployed successfully
-        let zero_address: ContractAddress = 0.try_into().unwrap();
-        assert!(contract_address != zero_address);
+    // Check that DepositEvent was emitted
+    // The DepositEvent has keys: ["DepositEvent"] and data: [commitment, index]
+    let mut keys = array![];
+    keys.append(selector!("DepositEvent")); // Event name
 
-        // Test is_exist_commitment method
-        assert!(!dispatcher.is_exist_commitment(123_u256));
+    let mut data = array![];
+    data.append(commitment.low.into()); // Commitment low part as felt252
+    data.append(commitment.high.into()); // Commitment high part as felt252
+    data.append(0.into()); // Index 0 as felt252
 
-        i = i + 1;
-    }
-}
+    let expected_event = Event { keys, data };
 
-#[test]
-fn test_token_amount_validation() {
-    // Test deployment with different token amounts
-    let test_amounts = array![
-        1_u256,                           // minimum non-zero amount
-        1000000000000000000_u256,         // 1 USDC
-        1000000000000000000000_u256,      // 1000 USDC
-        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff_u256,  // maximum amount
-    ];
+    spy.assert_emitted(@array![(zstarkwarp_address, expected_event)]);
 
-    let mut i = 0;
-    while i < test_amounts.len() {
-        let token_amount = test_amounts[i];
-
-        let mut calldata = ArrayTrait::new();
-        let height = 32_u64;
-        let token_address: ContractAddress = 0x1.try_into().unwrap();
-
-        height.serialize(ref calldata);
-        token_address.serialize(ref calldata);
-        token_amount.serialize(ref calldata);
-
-        let contract_address = deploy_contract("ZstarkWarpDeposit", @calldata);
-        let dispatcher = IZstarkWarpDepositDispatcher { contract_address };
-
-        // Test that contract was deployed successfully
-        let zero_address: ContractAddress = 0.try_into().unwrap();
-        assert!(contract_address != zero_address);
-
-        i = i + 1;
-    }
+    // Verify the deposit worked
+    assert!(zstarkwarp_dispatcher.is_exist_commitment(commitment), "Commitment should exist after deposit");
 }

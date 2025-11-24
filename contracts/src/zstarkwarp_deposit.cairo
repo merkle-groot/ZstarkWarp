@@ -73,6 +73,10 @@ pub mod ZstarkWarpDeposit {
             });
         }
 
+        fn get_token_details(self: @ContractState) -> (ContractAddress, u256) {
+            (self.token.read(), self.token_amount.read())
+        }
+
         fn is_exist_commitment(self: @ContractState, commitment: u256) -> bool {
             self.commitments.entry(commitment).read()
         }

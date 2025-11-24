@@ -94,7 +94,7 @@ pub mod MerkleTreeComponent {
             let mut index = self.current_index.read();
             let height: u64 = self.height.read();
 
-            assert!(leaf != END_POINTER || leaf != 0, "IMT: invalid commitment");
+            assert!(leaf != END_POINTER && leaf != 0, "IMT: invalid commitment");
             // TODO: Add a limit
             // assert!(index < 2_u.pow(height), "IMT: crossed max leaves");
             self.leaves.entry(index).write(leaf);
