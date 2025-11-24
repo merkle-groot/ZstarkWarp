@@ -1,30 +1,31 @@
 #[starknet::contract]
 pub mod MerkleTreeMock {
-    use crate::merkle_tree::merkle_tree::IncrementalMerkleTreeComponent;
+    use core::array;
+    use starknet::ContractAddress;
+    use crate::merkle_tree::merkle_tree::MerkleTreeComponent;
     use crate::mocks::merkle_tree_mock_interface::IMerkleTreeMock;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess};
-
-    component!(path: IncrementalMerkleTreeComponent, storage: merkleTree, event: merkleTreeEvent);
+    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, Vec, VecTrait, MutableVecTrait};
+    component!(path: MerkleTreeComponent, storage: merkleTree, event: merkleTreeEvent);
 
     #[storage]
     struct Storage {
         balance: felt252,
         #[substorage(v0)]
-        merkleTree: IncrementalMerkleTreeComponent::Storage,
+        merkleTree: MerkleTreeComponent::Storage,
     }
 
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
-        merkleTreeEvent: IncrementalMerkleTreeComponent::Event,
+        merkleTreeEvent: MerkleTreeComponent::Event,
     }
 
     // external fns of IMT
     #[abi(embed_v0)]
-    impl MerkleTreeExternalImpl = IncrementalMerkleTreeComponent::IncrementalMerkleTreeImpl<ContractState>;
+    impl MerkleTreeExternalImpl = MerkleTreeComponent::MerkleTreeImpl<ContractState>;
 
     // internal fns of IMT
-    impl MerkleTreeInteralImpl = IncrementalMerkleTreeComponent::IncrementalMerkleTreeInternalImpl<ContractState>;
+    impl MerkleTreeInteralImpl = MerkleTreeComponent::MerkleTreeInternalImpl<ContractState>;
 
     #[constructor]
     fn constructor(ref self: ContractState, height: u64) {
