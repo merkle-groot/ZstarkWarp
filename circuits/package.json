@@ -11,6 +11,10 @@
   "license": "ISC",
   "packageManager": "pnpm@10.15.0",
   "dependencies": {
-    "circomlib": "^2.0.5"
+    "chai": "^6.2.1",
+    "circom_tester": "^0.0.24",
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
+    "mocha": "^11.7.5"
   }
 }
