@@ -31,7 +31,6 @@ pub mod MerkleTreeComponent {
         height: u64
     }
 
-
     #[event]
     #[derive(Drop, starknet::Event)]
     pub enum Event {
@@ -41,21 +40,6 @@ pub mod MerkleTreeComponent {
     impl MerkleTree<TContractState, +HasComponent<TContractState>> of IMerkleTree<ComponentState<TContractState>> {
         fn get_current_root(self: @ComponentState<TContractState>) -> u256 {
             self.current_root.read()
-        }
-
-        fn add_root(ref self: ComponentState<TContractState>, new_root: u256) {
-            assert!(new_root != 0, "IMT: root can't be 0");
-            let current_root = self.current_root.read();
-            if (current_root == 0){
-                self.roots.entry(0).write(new_root);
-                self.roots.entry(new_root).write(0);
-                self.current_root.write(new_root);
-                return;
-            }
-
-            self.roots.entry(current_root).write(new_root);
-            self.roots.entry(new_root).write(0);
-            self.current_root.write(new_root);
         }
 
         fn is_valid_root(self: @ComponentState<TContractState>, root: u256) -> bool{
@@ -105,10 +89,12 @@ pub mod MerkleTreeComponent {
             result_u384.try_into().unwrap()
         }
 
-        fn _add_leaf(ref self: ComponentState<TContractState>, leaf: u256) {
+        fn _add_leaf(ref self: ComponentState<TContractState>, leaf: u256) -> u64 {
             // add the leaf to the merkle tree
             let mut index = self.current_index.read();
             let height: u64 = self.height.read();
+
+            assert!(leaf != END_POINTER || leaf != 0, "IMT: invalid commitment");
             // TODO: Add a limit
             // assert!(index < 2_u.pow(height), "IMT: crossed max leaves");
             self.leaves.entry(index).write(leaf);
@@ -140,6 +126,8 @@ pub mod MerkleTreeComponent {
             self.current_root.write(current_hash);
             self.roots.entry(previous_root).write(current_hash);
             self.roots.entry(current_hash).write(END_POINTER);
+
+            index
         }
 
         fn _get_zero_root(self: @ComponentState<TContractState>, level: u64) -> u256 {

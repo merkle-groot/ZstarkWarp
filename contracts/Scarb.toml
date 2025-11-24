@@ -7,6 +7,9 @@ edition = "2024_07"
 
 [dependencies]
 starknet = "2.11.4"
+openzeppelin_token = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.2" }
+openzeppelin_access = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.2" }
+openzeppelin_interfaces = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v3.0.0-alpha.2" }
 garaga = { git = "https://github.com/keep-starknet-strange/garaga.git" }
 
 [dev-dependencies]
