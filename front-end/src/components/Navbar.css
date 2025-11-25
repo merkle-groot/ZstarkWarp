@@ -1,0 +1,133 @@
+@font-face {
+  font-family: 'LiuJianMaoCao';
+  src: url('../font/LiuJianMaoCao-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.navbar {
+  background-color: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: 25vh;
+  min-height: 200px;
+  padding: 2rem 0 1.5rem 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.nav-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.main-logo {
+  font-family: 'LiuJianMaoCao', cursive;
+  font-size: 5rem;
+  color: #000000;
+  text-decoration: none;
+  transition: opacity 0.3s ease;
+  display: inline-block;
+  line-height: 1.2;
+}
+
+.main-logo:hover {
+  opacity: 0.8;
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.nav-menu {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  gap: 2.5rem;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  padding: 1rem 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.nav-item {
+  margin: 0;
+}
+
+.nav-link {
+  color: #000000;
+  text-decoration: none;
+  font-weight: 400;
+  font-size: 0.95rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: none;
+  background: transparent;
+  display: block;
+}
+
+.nav-link:hover {
+  background-color: #f3f4f6;
+  opacity: 1;
+}
+
+.nav-link.active {
+  font-weight: 600;
+  background-color: #f9fafb;
+}
+
+@media screen and (max-width: 768px) {
+  .navbar {
+    height: 25vh;
+    min-height: 180px;
+    padding: 1.5rem 0 1rem 0;
+  }
+
+  .nav-header {
+    margin-bottom: 1rem;
+  }
+
+  .main-logo {
+    font-size: 3.5rem;
+  }
+
+  .nav-container {
+    padding: 0 1rem;
+  }
+
+  .nav-menu {
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .nav-link {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .main-logo {
+    font-size: 2.5rem;
+  }
+
+  .navbar {
+    min-height: 150px;
+  }
+}

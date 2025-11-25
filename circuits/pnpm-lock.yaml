@@ -20,6 +20,9 @@ importers:
       circomlibjs:
         specifier: ^0.1.7
         version: 0.1.7
+      garaga:
+        specifier: ^0.18.2
+        version: 0.18.2
       mocha:
         specifier: ^11.7.5
         version: 11.7.5
@@ -408,6 +411,9 @@ packages:
 
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
+
+  garaga@0.18.2:
+    resolution: {integrity: sha512-pf/IWXx5lXbhAQBG9z/gp4HdC1q96pX2Q+KflfCjz2qqeMhkUSxx4e87sJq7ubSubc3aZuX3k285aGO03iDUvw==}
 
   generator-function@2.0.1:
     resolution: {integrity: sha512-SFdFmIJi+ybC0vjlHN0ZGVGHc3lgE0DxPAT0djjVg+kjOnSqclqmj0KQ7ykTOLP6YxoqOvuAODGdcHJn+43q3g==}
@@ -1409,6 +1415,8 @@ snapshots:
       signal-exit: 4.1.0
 
   function-bind@1.1.2: {}
+
+  garaga@0.18.2: {}
 
   generator-function@2.0.1: {}
 

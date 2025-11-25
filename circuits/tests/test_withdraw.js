@@ -2,7 +2,6 @@ const chai = require("chai");
 const path = require("path");
 const wasm_tester = require("circom_tester").wasm;
 const { MerkleTree } = require("./helpers/merkleTree.js");
-const { hash } = require("./helpers/poseidon.js");
 const { getCommitment } = require("./helpers/deposit.js");
 const assert = chai.assert;
 
@@ -35,6 +34,7 @@ describe("Withdraw circuit test", function () {
         for (let i = 0; i < numLeaves; i++) {
             const secretKey = BigInt(1337 + i);
             const nullifier = BigInt(123456 + i);
+            const receiver = BigInt(1729 + i);
 
             try {
                 const { commitment, nullifierHash } = await getCommitment(secretKey, nullifier);
@@ -47,6 +47,7 @@ describe("Withdraw circuit test", function () {
                 commitments.push({
                     secretKey,
                     nullifier,
+                    receiver,
                     commitment,
                     nullifierHash
                 });
@@ -72,6 +73,7 @@ describe("Withdraw circuit test", function () {
 
             workingParams.push({
                 root,
+                receiver,
                 siblings,
                 isLeft,
                 nullifier: commitments[i].nullifier,
