@@ -26,6 +26,9 @@ importers:
       mocha:
         specifier: ^11.7.5
         version: 11.7.5
+      snarkjs:
+        specifier: ^0.7.5
+        version: 0.7.5
 
 packages:
 

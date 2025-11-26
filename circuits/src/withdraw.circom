@@ -22,8 +22,8 @@ template CommitmentChecker() {
 
 template Withdraw(nLevels) {
     signal input root;
-    // bind the reciever to the proof
-    signal input reciever;
+    // bind the receiver to the proof
+    signal input receiver;
 	signal input siblings[nLevels];
 	signal input isLeft[nLevels];
     signal input nullifier;
@@ -49,4 +49,4 @@ template Withdraw(nLevels) {
     commitmentChecker.commitment <== commitment;
 }
 
-component main{public [root, reciever, nullifierHash]} = Withdraw(32);
+component main{public [root, receiver, nullifierHash]} = Withdraw(32);
