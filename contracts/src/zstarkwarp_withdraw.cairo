@@ -1,5 +1,5 @@
 #[starknet::contract]
-pub mod ZstarkWarpDeposit {
+pub mod ZstarkWarpWithdraw {
     use zstarkwarp::verifier_interface::{IGroth16VerifierBN254Dispatcher, IGroth16VerifierBN254DispatcherTrait};
     use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
     use zstarkwarp::zstarkwarp_withdraw_interface::IZstarkWarpDWithdraw;
@@ -14,18 +14,25 @@ pub mod ZstarkWarpDeposit {
         StoragePointerWriteAccess
     };
 
-    #[derive(starknet::Store, Serde, Drop)]
+    #[derive(starknet::Store, Serde, Drop, PartialEq)]
     pub struct DepositInfo {
         pub deposit_contract: ContractAddress,
         pub deposit_token: ContractAddress,
         pub deposit_amount: u256,
     }
 
-    #[derive(starknet::Store)]
+    #[derive(starknet::Store, Serde, Drop, PartialEq)]
     pub struct WithdrawalRequest {
         pub root: u256,
         pub nullifierHash: u256,
         pub recipient: ContractAddress,
+    }
+
+    #[derive(Serde, Drop)]
+    pub struct WithdrawalInfo {
+        pub withdrawal_contract: ContractAddress,
+        pub withdrawal_token: ContractAddress,
+        pub withdrawal_amount: u256,
     }
 
     #[storage]
@@ -52,7 +59,6 @@ pub mod ZstarkWarpDeposit {
             deposit_info.deposit_contract != contract_address_const::<0>() &&
             deposit_info.deposit_token != contract_address_const::<0>() &&
             deposit_info.deposit_amount != 0_u256 &&
-            deposit_info.deposit_amount != withdrawal_amount &&
             deposit_info.deposit_token != withdrawal_token,
             "ZWW: Invalid deposit struct"
         );
@@ -109,6 +115,21 @@ pub mod ZstarkWarpDeposit {
 
             let verifier_dispatcher = IGroth16VerifierBN254Dispatcher { contract_address: self.verifier.read() };
             verifier_dispatcher.verify_groth16_proof_bn254(proof).unwrap()
+        }
+
+        // fn get_bridge_config(self: @ContractState) -> (DepositInfo, WithdrawalInfo) {
+        //     (
+        //         self.deposit_info.read(),
+        //         WithdrawalInfo {
+        //             withdrawal_contract: get_contract_address(),
+        //             withdrawal_token: self.withdrawal_token.read(),
+        //             withdrawal_amount: self.withdrawal_amount.read()
+        //         }
+        //     )
+        // }
+
+        fn get_solver_balance(self: @ContractState, solver: ContractAddress) -> u256 {
+            self.solver_balance.entry(solver).read()
         }
     }
 }

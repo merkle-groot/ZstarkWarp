@@ -1,4 +1,5 @@
 use starknet::ContractAddress;
+
 #[starknet::interface]
 pub trait IZstarkWarpDWithdraw<TContractState> {
     fn solver_deposit(ref self: TContractState, amount: u256);
@@ -10,4 +11,6 @@ pub trait IZstarkWarpDWithdraw<TContractState> {
         recipient: ContractAddress, 
         proof: Span<felt252>
     ) -> Span<u256>;
+    // fn get_bridge_config(self: @TContractState) -> (DepositInfo, WithdrawalInfo);
+    fn get_solver_balance(self: @TContractState, solver: ContractAddress) -> u256;
 }

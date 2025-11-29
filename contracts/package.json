@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "starknet": "^8.9.1"
+  }
+}

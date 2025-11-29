@@ -27,7 +27,7 @@ fn deploy_zstarkWarp_contract(height: u64, usdc_address: ContractAddress, usdc_a
     usdc_address.serialize(ref calldata);
     usdc_amount.serialize(ref calldata);
 
-    let contract = declare("ZstarkWarpDeposit").unwrap_syscall().contract_class();
+    let contract = declare("ZstarkWarp").unwrap_syscall().contract_class();
     let (contract_address, _) = contract.deploy(@calldata).unwrap_syscall();
     contract_address
 }
