@@ -4,11 +4,11 @@ use super::groth16_verifier_constants::{N_PUBLIC_INPUTS, ic, precomputed_lines, 
 trait IGroth16VerifierBN254<TContractState> {
     fn verify_groth16_proof_bn254(
         self: @TContractState, full_proof_with_hints: Span<felt252>,
-    ) -> Option<Span<u256>>;
+    ) -> bool;
 }
 
 #[starknet::contract]
-pub mod Groth16VerifierBN254 {
+mod Groth16VerifierBN254 {
     use garaga::definitions::{G1G2Pair, G1Point};
     use garaga::ec_ops::{G1PointTrait, ec_safe_add};
     use garaga::ec_ops_g2::G2PointTrait;
@@ -27,7 +27,7 @@ pub mod Groth16VerifierBN254 {
     impl IGroth16VerifierBN254 of super::IGroth16VerifierBN254<ContractState> {
         fn verify_groth16_proof_bn254(
             self: @ContractState, full_proof_with_hints: Span<felt252>,
-        ) -> Option<Span<u256>> {
+        ) -> bool {
             // DO NOT EDIT THIS FUNCTION UNLESS YOU KNOW WHAT YOU ARE DOING.
             // This function returns an Option for the public inputs if the proof is valid.
             // If the proof is invalid, the execution will either fail or return None.
@@ -85,11 +85,7 @@ pub mod Groth16VerifierBN254 {
                 mpcheck_hint,
                 small_Q,
             );
-            if check == true {
-                return Option::Some(groth16_proof.public_inputs);
-            } else {
-                return Option::None;
-            }
+            return check;
         }
     }
 }

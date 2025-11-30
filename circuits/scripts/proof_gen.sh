@@ -2,7 +2,7 @@
 set -e
 
 # Configuration
-OUTPUT_DIR="./circuits/circuit_artifacts"
+OUTPUT_DIR="./circuit_artifacts"
 CIRCUIT_NAME="Withdraw"
 COMPILED_DIR="$OUTPUT_DIR"
 PTAU_DIR="$COMPILED_DIR/ptau"

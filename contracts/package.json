@@ -2,5 +2,10 @@
   "dependencies": {
     "dotenv": "^17.2.3",
     "starknet": "^8.9.1"
-  }
+  },
+  "scripts": {
+    "deploy:update": "node scripts/deployContracts.js update",
+    "deploy:redeploy": "node scripts/deployContracts.js redeploy"
+  },
+  "type": "module"
 }

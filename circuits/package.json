@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npx mocha ./tests",
-    "snforge_proofs": "npx run ./tests/generateProofs"
+    "snforge_proofs": "node ./scripts/gen_inputs.js"
   },
   "keywords": [],
   "author": "",

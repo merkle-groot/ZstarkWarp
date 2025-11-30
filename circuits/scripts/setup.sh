@@ -2,13 +2,13 @@
 set -e
 
 # Configuration
-OUTPUT_DIR="./circuits/circuit_artifacts"
-CIRCUIT="./circuits/src/withdraw.circom"
+OUTPUT_DIR="./circuit_artifacts"
+CIRCUIT="./src/withdraw.circom"
 CIRCUIT_NAME="Withdraw"
 COMPILED_DIR="$OUTPUT_DIR"
 PTAU_DIR="$COMPILED_DIR/ptau"
-CONTRACTS_DIR="./contracts"
-PTAU_PRE="./circuits/src/ptau/powersOfTau28_hez_final_14.ptau"
+CONTRACTS_DIR="../contracts"
+PTAU_PRE="./src/ptau/powersOfTau28_hez_final_14.ptau"
 
 # Check if required tools are installed
 if ! command -v circom &> /dev/null || ! command -v snarkjs &> /dev/null; then
@@ -58,7 +58,7 @@ snarkjs zkey export verificationkey \
     "$COMPILED_DIR/verification_key.json"
 
 echo "Generating Solidity verifier..."
-cd "$CONTRACTS_DIR" && echo "verifier" | garaga gen --system groth16 --vk "../$COMPILED_DIR/verification_key.json"
+cd "$CONTRACTS_DIR" && echo "verifier" | garaga gen --system groth16 --vk "../circuits/$COMPILED_DIR/verification_key.json"
 
 echo "Setup completed successfully!"
 

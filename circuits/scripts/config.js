@@ -1,6 +1,6 @@
 const SCRIPTS = {
-  setup: "./circuits/gen_calldata/setup.sh",
-  proof: "./circuits/gen_calldata/proof_gen.sh"
+  setup: "./scripts/setup.sh",
+  proof: "./scripts/proof_gen.sh"
 };
 
 const CONFIG = {

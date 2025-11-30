@@ -1,31 +1,135 @@
-import { Account, Contract, RpcProvider, constants } from 'starknet';
+import { Account, Contract, RpcProvider, CallData, constants, json } from 'starknet';
 import * as dotenv from 'dotenv'
+import fs from 'fs';
 dotenv.config();
 
-// Import compiled contract artifacts
-import usdcMockSierra from '../target/dev/zstarkwarp_UsdcMock.contract_class.json' with { type: 'json' };
-import usdcMockCasm from '../target/dev/zstarkwarp_UsdcMock.compiled_contract_class.json' with { type: 'json' };
+// const contracts = [
+//     // 'UsdcMock',
+//     // 'ZstarkWarp',
+//     'Groth16VerifierBN254'
+// ];
 
-const accountAddress = process.env.ACCOUNT_ADDRESS;
-const privateKey = process.env.PRIVATE_KEY;
+// const contractPayloads = [
+// ];
 
-const provider = new RpcProvider({ nodeUrl: constants.NetworkName.SN_SEPOLIA });
+// const contractClassHashes = {
+
+// };
+
+
+const accountAddress = process.env.ZTARKNET_ACCOUNT_ADDRESS;
+const privateKey = process.env.ZTARKNET_PRIVATE_KEY;
+
+const provider = new RpcProvider({
+    nodeUrl: "https://ztarknet-madara.d.karnot.xyz"
+});
 const account = new Account({
     provider: provider,
     address: accountAddress,
     signer: privateKey,
 });
 
+const compiledCasm = json.parse(
+  fs.readFileSync('./target/dev/zstarkwarp_Groth16VerifierBN254.compiled_contract_class.json').toString('ascii')
+);
 
-// Declare and deploy USDC Mock contract in one step
-const usdcMockContract = await Contract.factory({
-  contract: usdcMockSierra, // Compiled Sierra contract
-  casm: usdcMockCasm, // Compiled CASM file
-  account: account, // Deploying account
-  constructorCalldata: [
-    accountAddress, // owner: ContractAddress
-    "1000000000000000000000" // test_amount: u256 (1e21)
-  ],
-});
+const compiledSierra = json.parse(
+  fs.readFileSync('./target/dev/zstarkwarp_Groth16VerifierBN254.contract_class.json').toString('ascii')
+);
 
-console.log("USDC Mock contract deployed at:", usdcMockContract.address);
+const calldata = json.parse(
+    fs.readFileSync('./tests/calldata1.json')
+);
+
+
+(async () => {
+    const verifierAbi = compiledSierra.abi;
+    console.log(verifierAbi);
+    const verifier = new Contract({
+        abi: verifierAbi,
+        address: "0x04124844e9a52f37fd4b62dddcaf46e41ef01ade35e118782b5c15c607f359c1",
+        providerOrAccount: account, // Account for writing
+    });
+
+    try {
+        calldata.calldata[1] = '0';
+        const result = await verifier.verify_groth16_proof_bn254(calldata.calldata);
+        console.log("Result:", result);
+    } catch (error) {
+        console.error("Error details:", error);
+        console.error("Error message:", error.message);
+        console.error("Error code:", error.code);
+
+        // // Write error to file for debugging
+        fs.writeFileSync('./error.json', JSON.stringify({
+            error: error.message,
+            code: error.code,
+            stack: error.stack,
+            calldataLength: calldata.calldata.length,
+            firstFewElements: calldata.calldata
+        }, null, 2));
+    }
+})();
+
+// // (async () => {
+// //     const promises = contracts.map((name) => {
+// //         new Promise(async(resolve, reject) => {
+// //             try {
+// //                 const result = await account.declare({
+// //                     contract: json.parse(
+// //                         fs.readFileSync(`./target/dev/zstarkwarp_${name}.contract_class.json`).toString('ascii')
+// //                         ),
+// //                         casm: json.parse(
+// //                             fs.readFileSync(`./target/dev/zstarkwarp_${name}.compiled_contract_class.json`).toString('ascii')
+// //                         )
+// //                     });
+// //                     contractClassHashes[name] = result.compiled_class_hash;
+// //                     console.log(`Contract ${name }:`, result.compiled_class_hash);
+// //             } catch(e) {
+// //                 console.log(`Error declaring contract ${name}:`, e.message || e);
+
+// //                 // Write the full error to file for debugging
+// //                 fs.writeFileSync('./error.json', JSON.stringify(e, null, 2));
+
+// //                 // Try to extract class hash from different error structures
+// //                 let message = '';
+// //                 if (e.baseError && e.baseError.data && e.baseError.data.execution_error) {
+// //                     message = e.baseError.data.execution_error;
+// //                 } else if (e.message) {
+// //                     message = e.message;
+// //                 } else if (typeof e === 'string') {
+// //                     message = e;
+// //                 }
+
+// //                 const match = message.match(/hash\s+(0x[0-9a-fA-F]+)/);
+
+// //                 if (match) {
+// //                     console.log(`Contract ${name } already declared with class hash:`, match[1]);
+// //                     contractClassHashes[name] = match[1];
+// //                 } else {
+// //                     console.log(`Could not extract class hash for ${name}. Error: ${message}`);
+// //                 }
+// //             }
+// //         });
+// //     });
+
+// //     await Promise.all(promises);
+// //     console.log("contract hashes: ", contractClassHashes);
+// // })();
+
+// // const compiledSierra = json.parse(
+// //   fs.readFileSync('./target/dev/zstarkwarp_UsdcMock.contract_class.json').toString('ascii')
+// // );
+// // const compiledCasm = json.parse(
+// //   fs.readFileSync('./target/dev/zstarkwarp_UsdcMock.compiled_contract_class.json').toString('ascii')
+// // );
+
+
+
+// // const reponse = await account.declare({
+// //     contract: compiledSierra,
+// //     casm: compiledCasm
+// // })
+
+
+// // console.log("USDC Mock contract deployed at:", reponse);
