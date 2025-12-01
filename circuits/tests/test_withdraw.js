@@ -16,7 +16,6 @@ before(async function() {
         verbose: true,
         logs: true
     });
-    commitmentTesterCircuit = await wasm_tester(path.join(__dirname, "../src/withdraw.circom"));
     merkleTree = new MerkleTree(32);
     await merkleTree.init();
 });
@@ -73,7 +72,7 @@ describe("Withdraw circuit test", function () {
 
             workingParams.push({
                 root,
-                receiver,
+                receiver: commitments[i].receiver,
                 siblings,
                 isLeft,
                 nullifier: commitments[i].nullifier,
@@ -111,7 +110,8 @@ describe("Withdraw circuit test", function () {
         };
 
         try {
-            await circuit.calculateWitness(invalidSecretParams);
+            const w = await circuit.calculateWitness(invalidSecretParams);
+            await circuit.checkConstraints(w);
             assert.fail("Should have failed with invalid secret key");
         } catch (error) {
             console.log("Correctly failed with invalid secret key");
@@ -126,7 +126,8 @@ describe("Withdraw circuit test", function () {
         };
 
         try {
-            await circuit.calculateWitness(invalidNullifierParams);
+            const w = await circuit.calculateWitness(invalidNullifierParams);
+            await circuit.checkConstraints(w);
             assert.fail("Should have failed with invalid nullifier");
         } catch (error) {
             console.log("Correctly failed with invalid nullifier");
@@ -141,7 +142,8 @@ describe("Withdraw circuit test", function () {
         };
 
         try {
-            await circuit.calculateWitness(invalidCommitmentParams);
+            const w = await circuit.calculateWitness(invalidCommitmentParams);
+            await circuit.checkConstraints(w);
             assert.fail("Should have failed with mismatched commitment");
         } catch (error) {
             console.log("Correctly failed with mismatched commitment");
@@ -156,7 +158,8 @@ describe("Withdraw circuit test", function () {
         };
 
         try {
-            await circuit.calculateWitness(invalidRootParams);
+            const w = await circuit.calculateWitness(invalidRootParams);
+            await circuit.checkConstraints(w);
             assert.fail("Should have failed with invalid root");
         } catch (error) {
             console.log("Correctly failed with invalid merkle root");
@@ -174,7 +177,8 @@ describe("Withdraw circuit test", function () {
         };
 
         try {
-            await circuit.calculateWitness(invalidPathParams);
+            const w = await circuit.calculateWitness(invalidPathParams);
+            await circuit.checkConstraints(w);
             assert.fail("Should have failed with corrupted path");
         } catch (error) {
             console.log("Correctly failed with corrupted sibling path");
