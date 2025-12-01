@@ -1,7 +1,7 @@
 use super::groth16_verifier_constants::{N_PUBLIC_INPUTS, ic, precomputed_lines, vk};
 
 #[starknet::interface]
-trait IGroth16VerifierBN254<TContractState> {
+pub trait IGroth16VerifierBN254<TContractState> {
     fn verify_groth16_proof_bn254(
         self: @TContractState, full_proof_with_hints: Span<felt252>,
     ) -> bool;
@@ -18,7 +18,7 @@ mod Groth16VerifierBN254 {
     use super::{N_PUBLIC_INPUTS, ic, precomputed_lines, vk};
 
     const ECIP_OPS_CLASS_HASH: felt252 =
-        0x465991ec820cf53dbb2b27474b6663fb6f0c8bf3dac7db3991960214fad97f5;
+        0x146ee805dd0252256484a6001dc932dd940b1787c0f24e65629f4f6645f0692;
 
     #[storage]
     struct Storage {}

@@ -3,20 +3,6 @@ import * as dotenv from 'dotenv'
 import fs from 'fs';
 dotenv.config();
 
-// const contracts = [
-//     // 'UsdcMock',
-//     // 'ZstarkWarp',
-//     'Groth16VerifierBN254'
-// ];
-
-// const contractPayloads = [
-// ];
-
-// const contractClassHashes = {
-
-// };
-
-
 const accountAddress = process.env.ZTARKNET_ACCOUNT_ADDRESS;
 const privateKey = process.env.ZTARKNET_PRIVATE_KEY;
 
@@ -47,14 +33,18 @@ const calldata = json.parse(
     console.log(verifierAbi);
     const verifier = new Contract({
         abi: verifierAbi,
-        address: "0x04124844e9a52f37fd4b62dddcaf46e41ef01ade35e118782b5c15c607f359c1",
+        address: "0x06f3a6862f37cfb87f61eb9911f4fb4b23830b5d4bbc00d01750cfa79c9df0e1",
         providerOrAccount: account, // Account for writing
     });
 
     try {
-        calldata.calldata[1] = '0';
-        const result = await verifier.verify_groth16_proof_bn254(calldata.calldata);
-        console.log("Result:", result);
+        // should return false
+        const result1 = await verifier.verify_groth16_proof_bn254(calldata.calldata.slice(0, 100));
+        console.log("Result:", result1);
+
+        // should return true
+        const result2 = await verifier.verify_groth16_proof_bn254(calldata.calldata);
+        console.log("Result:", result2);
     } catch (error) {
         console.error("Error details:", error);
         console.error("Error message:", error.message);
