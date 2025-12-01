@@ -32,15 +32,11 @@ const calldata = json.parse(
     const verifierAbi = compiledSierra.abi;
     const verifier = new Contract({
         abi: verifierAbi,
-        address: "0x06f3a6862f37cfb87f61eb9911f4fb4b23830b5d4bbc00d01750cfa79c9df0e1",
+        address: "0x039d677c922c4fca4160f20836e75c93f0ef2399abc60e97f1ab517a20f85873",
         providerOrAccount: account, // Account for writing
     });
 
     try {
-        // should return false
-        const result1 = await verifier.verify_groth16_proof_bn254(calldata.calldata.slice(0, 100));
-        console.log("Result:", result1);
-
         // should return true
         const result2 = await verifier.verify_groth16_proof_bn254(calldata.calldata);
         console.log("Result:", result2);

@@ -1,4 +1,5 @@
 use starknet::ContractAddress;
+use zstarkwarp::zstarkwarp::ZstarkWarp::{WithdrawalRequest, WithdrawalInfo};
 
 #[starknet::interface]
 pub trait IZstarkWarpDWithdraw<TContractState> {
@@ -10,7 +11,13 @@ pub trait IZstarkWarpDWithdraw<TContractState> {
         nullifierHash: u256, 
         recipient: ContractAddress, 
         proof: Span<felt252>
-    ) -> Span<u256>;
+    );
     // fn get_bridge_config(self: @TContractState) -> (DepositInfo, WithdrawalInfo);
     fn get_solver_balance(self: @TContractState, solver: ContractAddress) -> u256;
+    fn approve_withdraw(
+        ref self: TContractState, 
+        index: u64
+    ); 
+    fn get_withdrawal_info(self: @TContractState) -> WithdrawalInfo;
+    fn get_request(self: @TContractState, index: u64) -> WithdrawalRequest;
 }

@@ -1,5 +1,7 @@
 #[starknet::contract]
 pub mod ZstarkWarp {
+    use core::num::traits::Pow;
+    use starknet::{get_block_info, get_tx_info};
     use crate::merkle_tree::merkle_tree::MerkleTreeComponent;
     use crate::zstarkwarp_deposit_interface::IZstarkWarpDeposit;
     use starknet::{
@@ -18,7 +20,7 @@ pub mod ZstarkWarp {
         StoragePathEntry
     };
     use zstarkwarp::verifier_interface::{IGroth16VerifierBN254Dispatcher, IGroth16VerifierBN254DispatcherTrait};
-    use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
+    use openzeppelin_interfaces::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
     use zstarkwarp::zstarkwarp_withdraw_interface::IZstarkWarpDWithdraw;
 
     component!(path: MerkleTreeComponent, storage: merkleTree, event: MerkleTreeEvent);
@@ -27,6 +29,12 @@ pub mod ZstarkWarp {
     pub enum Chain {
         Starknet,
         Ztarknet
+    }
+
+    #[derive(starknet::Store, Serde, Drop, PartialEq)]
+    pub enum Status {
+        Pending,
+        Processed
     }
 
     #[derive(Drop, starknet::Event)]
@@ -48,6 +56,16 @@ pub mod ZstarkWarp {
         pub root: u256,
         pub nullifierHash: u256,
         pub recipient: ContractAddress,
+        pub status: Status,
+    }
+
+    #[derive(starknet::Store, Debug, Serde, Drop, PartialEq)]
+    pub struct WithdrawalInfo {
+        pub user_withdrawal_amount: u256,
+        pub solver_withdrawal_amount: u256,
+        pub fee: u256,
+        pub cooloff_time: u64,
+        pub verifier: ContractAddress,
     }
 
     #[storage]
@@ -61,15 +79,17 @@ pub mod ZstarkWarp {
         deposit_amount: u256,
         commitments: Map<u256, bool>,
 
-
         // withdraw
-        withdrawal_amount: u256,
+        fee: u256,
+        solver_withdrawal_amount: u256,
+        user_withdrawal_amount: u256,
         solver_balance: Map<ContractAddress, u256>,
         nullifierHashes: Map<u256, bool>,
         pendingWithdrawals: Vec<WithdrawalRequest>,
+        pendingPayout: Vec<(ContractAddress, u64)>,
         verifier: ContractAddress,
-        fee: u256,
-
+        cooloff_time: u64,
+        
         // sibling contract
         sibling: SiblingInfo
     }
@@ -89,7 +109,16 @@ pub mod ZstarkWarp {
     impl MerkleTreeInteralImpl = MerkleTreeComponent::MerkleTreeInternalImpl<ContractState>;
 
     #[constructor]
-    fn constructor(ref self: ContractState, height: u64, token: ContractAddress, deposit_amount: u256, withdrawal_amount: u256, fee: u256, verifier: ContractAddress) {
+    fn constructor(
+        ref self: ContractState, 
+        height: u64, 
+        token: ContractAddress, 
+        deposit_amount: u256, 
+        withdrawal_amount: u256, 
+        fee: u256, 
+        verifier: ContractAddress, 
+        cooloff_time: u64
+    ) {
         self.merkleTree._merkle_tree_constructor(height);
         // assert!(token != ContractAddress(), "ZWD: Invalid address");
         assert!(deposit_amount != 0, "ZWD: Invalid amount");
@@ -105,9 +134,20 @@ pub mod ZstarkWarp {
         )
         self.token.write(token);
         self.deposit_amount.write(deposit_amount);
-        self.fee.write(fee);
-        self.withdrawal_amount.write(withdrawal_amount);
+        let decimals: u32 = ERC20ABIDispatcher { 
+            contract_address: token 
+        }.decimals().into();
+
+        let normalizer: u256 = Pow::pow(10_u256, decimals);
+
+        let calculated_fee = (withdrawal_amount * fee.into()) / normalizer;
+        self.fee.write(calculated_fee);
+
+        let user_withdrawal_amount = withdrawal_amount - calculated_fee;
+        self.solver_withdrawal_amount.write(withdrawal_amount);
+        self.user_withdrawal_amount.write(user_withdrawal_amount);
         self.verifier.write(verifier);
+        self.cooloff_time.write(cooloff_time);
     }
 
     #[abi(embed_v0)]
@@ -118,7 +158,7 @@ pub mod ZstarkWarp {
 
         fn deposit(ref self: ContractState, user: ContractAddress, commitment: u256) {
             // Get token payment from the user
-            let mut token_dispatcher = IERC20Dispatcher { contract_address: self.token.read()};
+            let mut token_dispatcher = ERC20ABIDispatcher { contract_address: self.token.read()};
             assert!(token_dispatcher.transfer_from(user, get_contract_address(), self.deposit_amount.read()), "ZWD: not enough allowance/balance");
             
             // Cannot deposit with an existing commitment
@@ -148,7 +188,7 @@ pub mod ZstarkWarp {
         fn solver_deposit(ref self: ContractState, amount: u256) {
             assert!(amount != 0, "ZWW: Invalid amount");
             // Get token payment from the user
-            let mut token_dispatcher = IERC20Dispatcher { contract_address: self.token.read()};
+            let mut token_dispatcher = ERC20ABIDispatcher { contract_address: self.token.read()};
             let solver = get_caller_address();
             assert!(token_dispatcher.transfer_from(solver, get_contract_address(), amount), "ZWW: not enough allowance/balance");
 
@@ -158,7 +198,7 @@ pub mod ZstarkWarp {
 
         fn solver_withdrawal(ref self: ContractState, amount: u256) {
             assert!(amount != 0, "ZWW: Invalid amount");
-            let mut token_dispatcher = IERC20Dispatcher { contract_address: self.token.read() };
+            let mut token_dispatcher = ERC20ABIDispatcher { contract_address: self.token.read() };
             let solver = get_caller_address();
 
             let previous_balance = self.solver_balance.entry(solver).read();
@@ -172,25 +212,70 @@ pub mod ZstarkWarp {
             nullifierHash: u256, 
             recipient: ContractAddress, 
             proof: Span<felt252>
-        ) -> Span<u256>{
+        ) {
             assert!(!self.nullifierHashes.entry(nullifierHash).read(), "ZWW: Duplicate nullifierHash");
             assert!(root != 0 && root != 1337, "ZWW: Invalid root");
             assert!(recipient != contract_address_const::<0>(), "ZWW: Invalid recipient");
 
             let verifier_dispatcher = IGroth16VerifierBN254Dispatcher { contract_address: self.verifier.read() };
-            verifier_dispatcher.verify_groth16_proof_bn254(proof).unwrap()
+            verifier_dispatcher.verify_groth16_proof_bn254(proof).unwrap();
+
+            self.nullifierHashes.entry(nullifierHash).write(true);
+
+            // ToDo: validate public inputs
+            self.pendingWithdrawals.push(WithdrawalRequest{
+                root,
+                nullifierHash,
+                recipient,
+                status: Status::Pending
+            });
         }
 
-        // fn get_bridge_config(self: @ContractState) -> (DepositInfo, WithdrawalInfo) {
-        //     (
-        //         self.deposit_info.read(),
-        //         WithdrawalInfo {
-        //             withdrawal_contract: get_contract_address(),
-        //             withdrawal_token: self.withdrawal_token.read(),
-        //             withdrawal_amount: self.withdrawal_amount.read()
-        //         }
-        //     )
-        // }
+        fn approve_withdraw(
+            ref self: ContractState, 
+            index: u64
+        ) {
+            let withdraw_request = self.pendingWithdrawals.get(index).map(|ptr| ptr.read()).unwrap();
+            assert!(withdraw_request.status != Status::Processed, "ZWW: Request is already processed");
+            
+            let solver = get_caller_address();
+            let solver_balance = self.get_solver_balance(solver);
+            let amount = self.user_withdrawal_amount.read();
+            assert!(solver_balance >= self.user_withdrawal_amount.read(), "ZWW: Insuffient solver balance");
+
+            let mut token_dispatcher = ERC20ABIDispatcher { contract_address: self.token.read()};
+            assert!(token_dispatcher.transfer(withdraw_request.recipient, amount), "ZWW: Defecit!");
+
+            // Reduce solver's balance
+            let solver_balance = self.get_solver_balance(solver);
+            self.solver_balance.entry(solver).write(solver_balance - amount);
+
+            self.pendingWithdrawals[index].write(WithdrawalRequest{
+                root: withdraw_request.root,
+                nullifierHash: withdraw_request.nullifierHash,
+                recipient: withdraw_request.recipient,
+                status: Status::Processed
+            });
+
+            let block_info = get_block_info();
+            self.pendingPayout.push(
+                (solver, block_info.block_timestamp + self.cooloff_time.read())
+            );
+        }
+
+        fn get_withdrawal_info(self: @ContractState) -> WithdrawalInfo {
+            WithdrawalInfo {
+                user_withdrawal_amount: self.user_withdrawal_amount.read(),
+                solver_withdrawal_amount: self.solver_withdrawal_amount.read(),
+                fee: self.fee.read(),
+                cooloff_time: self.cooloff_time.read(),
+                verifier: self.verifier.read()
+            }
+        }
+
+        fn get_request(self: @ContractState, index: u64) -> WithdrawalRequest {
+            self.pendingWithdrawals.get(index).map(|ptr| ptr.read()).unwrap()
+        }
 
         fn get_solver_balance(self: @ContractState, solver: ContractAddress) -> u256 {
             self.solver_balance.entry(solver).read()

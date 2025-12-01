@@ -27,6 +27,16 @@ fn deploy_zstarkWarp_contract(height: u64, usdc_address: ContractAddress, usdc_a
     usdc_address.serialize(ref calldata);
     usdc_amount.serialize(ref calldata);
 
+    let withdrawal_amount = 100000000000000000000_u256;
+    let fee = 5000000000000000_u256;
+    let verifier: ContractAddress = 0x2.try_into().unwrap();
+    let cooloff_time = 3600_u64;
+
+    withdrawal_amount.serialize(ref calldata);
+    fee.serialize(ref calldata);
+    verifier.serialize(ref calldata);
+    cooloff_time.serialize(ref calldata);
+
     let contract = declare("ZstarkWarp").unwrap_syscall().contract_class();
     let (contract_address, _) = contract.deploy(@calldata).unwrap_syscall();
     contract_address
@@ -59,8 +69,8 @@ fn mint_usdc(user: ContractAddress, usdc_address: ContractAddress) {
 fn test_constructor_deployment() {
     // Deploy ZstarkWarpDeposit contract with minimal setup
     let height = 32_u64;
-    let usdc_address: ContractAddress = 0x1.try_into().unwrap();
     let usdc_amount = 100000000000000000000_u256; // 100 USDC with 18 decimals
+    let usdc_address: ContractAddress = deploy_mock_usdc_contract(get_owner_address(), usdc_amount);
 
     let contract_address = deploy_zstarkWarp_contract(height, usdc_address, usdc_amount);
     let dispatcher = IZstarkWarpDepositDispatcher { contract_address };
