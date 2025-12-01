@@ -1,5 +1,5 @@
-const { SCRIPTS } = require("./config.js");
-const { runScript } = require("./utils.js");
+const { SCRIPTS } = require("../lib/config.js");
+const { runScript } = require("../lib/utils.js");
 
 const runSetup = async () => {
     console.log("Running setup script...");

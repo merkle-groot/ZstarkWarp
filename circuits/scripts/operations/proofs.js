@@ -1,5 +1,5 @@
-const { SCRIPTS, CONFIG } = require("./config.js");
-const { runScript } = require("./utils.js");
+const { SCRIPTS, CONFIG } = require("../lib/config.js");
+const { runScript } = require("../lib/utils.js");
 
 const generateProofs = async () => {
     console.log(`Generating ${CONFIG.numProofs} proofs...`);

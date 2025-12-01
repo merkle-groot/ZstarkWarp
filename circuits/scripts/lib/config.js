@@ -1,6 +1,9 @@
+const path = require("path");
+
+// Resolve script paths relative to this file so they work from any CWD
 const SCRIPTS = {
-  setup: "./scripts/setup.sh",
-  proof: "./scripts/proof_gen.sh"
+  setup: path.join(__dirname, "..", "bash_scripts", "setup.sh"),
+  proof: path.join(__dirname, "..", "bash_scripts", "proof_gen.sh")
 };
 
 const CONFIG = {

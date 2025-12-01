@@ -49,4 +49,4 @@ snarkjs groth16 verify \
     "$PROOF_DIR/public$INPUT_FILE_NUM.json" \
     "$PROOF_DIR/proof$INPUT_FILE_NUM.json"
 
-echo "All operations completed successfully!"
+echo "Proof checked!"

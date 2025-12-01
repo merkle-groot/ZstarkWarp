@@ -1,7 +1,7 @@
-const { MerkleTree } = require("../tests/helpers/merkleTree.js");
-const { getCommitment } = require("../tests/helpers/deposit.js");
-const { CONFIG } = require("./config.js");
-const { getRandomBigInt } = require("./utils.js");
+const { MerkleTree } = require("../../tests/helpers/merkleTree.js");
+const { getCommitment } = require("../../tests/helpers/deposit.js");
+const { CONFIG } = require("../lib/config.js");
+const { getRandomBigInt } = require("../lib/utils.js");
 const { writeFileSync } = require("fs");
 const path = require("path");
 
@@ -67,7 +67,7 @@ const generateCommitments = async () => {
             commitment: proof.commitment.toString()
         };
 
-        const inputFile = path.join(__dirname, '..', 'circuit_artifacts', `input${i + 1}.json`);
+        const inputFile = path.join(__dirname, '../../', 'circuit_artifacts', `input${i + 1}.json`);
         writeFileSync(inputFile, JSON.stringify(inputData, null, 2));
         console.log(`Created ${inputFile} (index: ${proof.index})`);
     });

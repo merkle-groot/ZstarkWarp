@@ -30,7 +30,6 @@ const calldata = json.parse(
 
 (async () => {
     const verifierAbi = compiledSierra.abi;
-    console.log(verifierAbi);
     const verifier = new Contract({
         abi: verifierAbi,
         address: "0x06f3a6862f37cfb87f61eb9911f4fb4b23830b5d4bbc00d01750cfa79c9df0e1",
