@@ -1,10 +1,7 @@
 #[starknet::contract]
 pub mod MerkleTreeMock {
-    use core::array;
-    use starknet::ContractAddress;
     use crate::merkle_tree::merkle_tree::MerkleTreeComponent;
     use crate::mocks::merkle_tree_mock_interface::IMerkleTreeMock;
-    use starknet::storage::{StoragePointerReadAccess, StoragePointerWriteAccess, Vec, VecTrait, MutableVecTrait};
     component!(path: MerkleTreeComponent, storage: merkleTree, event: merkleTreeEvent);
 
     #[storage]

@@ -3,7 +3,6 @@ use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, spy_events, E
 use snforge_std::Event;
 use zstarkwarp::zstarkwarp_deposit_interface::{IZstarkWarpDepositDispatcher, IZstarkWarpDepositDispatcherTrait};
 use zstarkwarp::zstarkwarp_deposit_interface::{IZstarkWarpDepositSafeDispatcher, IZstarkWarpDepositSafeDispatcherTrait};
-use openzeppelin_interfaces::erc20::{IERC20Dispatcher, IERC20DispatcherTrait};
 use zstarkwarp::mocks::usdc_token_interface::{IUSDCTokenDispatcher, IUSDCTokenDispatcherTrait};
 use zstarkwarp::merkle_tree::merkle_tree_interface::{IMerkleTreeDispatcher, IMerkleTreeDispatcherTrait};
 

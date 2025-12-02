@@ -2,8 +2,36 @@ use starknet::{contract_address_const, ContractAddress, SyscallResultTrait};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address, stop_cheat_caller_address};
 use zstarkwarp::zstarkwarp_withdraw_interface::{IZstarkWarpDWithdrawDispatcher, IZstarkWarpDWithdrawDispatcherTrait};
 use zstarkwarp::zstarkwarp::ZstarkWarp::{WithdrawalRequest, WithdrawalInfo};
-use zstarkwarp::mocks::mock_verifier::IGroth16VerifierBN254Dispatcher, IGroth16VerifierBN254DispatcherTrait};
+use zstarkwarp::verifier_interface::{IGroth16VerifierBN254Dispatcher, IGroth16VerifierBN254DispatcherTrait};
 use zstarkwarp::mocks::usdc_token_interface::{IUSDCTokenDispatcher, IUSDCTokenDispatcherTrait};
+
+fn get_owner_address() -> ContractAddress {
+    contract_address_const::<1000>()
+}
+
+fn get_alice_address() -> ContractAddress {
+    contract_address_const::<1001>()
+}
+
+fn get_bob_address() -> ContractAddress {
+    contract_address_const::<1002>()
+}
+
+fn deploy_mock_usdc_contract(owner: ContractAddress, amount: u256) -> ContractAddress {
+    let mut calldata = ArrayTrait::new();
+    owner.serialize(ref calldata);
+    amount.serialize(ref calldata);
+    let contract = declare("UsdcMock").unwrap_syscall().contract_class();
+    let (contract_address, _) = contract.deploy(@calldata).unwrap_syscall();
+    contract_address
+}
+
+fn deploy_mock_verifier_contract() -> ContractAddress {
+    let mut calldata = ArrayTrait::new();
+    let contract = declare("MockGroth16VerifierBN254").unwrap_syscall().contract_class();
+    let (contract_address, _) = contract.deploy(@calldata).unwrap_syscall();
+    contract_address
+}
 
 fn deploy_withdraw_contract(calldata: Array<felt252>) -> ContractAddress {
     let mut calldata = ArrayTrait::new();
@@ -17,6 +45,7 @@ fn deploy_withdraw_contract(calldata: Array<felt252>) -> ContractAddress {
     let verifier = deploy_mock_verifier_contract();
     let cooloff_time = 3600_u64;
 
+    
     height.serialize(ref calldata);
     usdc_address.serialize(ref calldata);
     usdc_deposit_amount.serialize(ref calldata);
@@ -25,7 +54,7 @@ fn deploy_withdraw_contract(calldata: Array<felt252>) -> ContractAddress {
     verifier.serialize(ref calldata);
     cooloff_time.serialize(ref calldata);
 
-    let withdraw_address = declare("ZstarkWarp").unwrap_syscall().contract_class();
+    let contract = declare("ZstarkWarp").unwrap_syscall().contract_class();
     let (withdraw_address, _) = contract.deploy(@calldata).unwrap_syscall();
     withdraw_address
 }
@@ -51,6 +80,7 @@ fn test_basic_withdraw_flow() {
     let verifier = deploy_mock_verifier_contract();
     let cooloff_time = 3600_u64;
 
+    
     height.serialize(ref calldata);
     usdc_address.serialize(ref calldata);
     usdc_deposit_amount.serialize(ref calldata);
@@ -66,6 +96,20 @@ fn test_basic_withdraw_flow() {
     let solver = get_alice_address();
     let user = get_bob_address();
 
+    // Setup solver with sufficient balance and mint to contract
+    let solver_deposit_amount = 1_000_000_000_000_000_000_u256; // 1000 USDC
+    let usdc_dispatcher = IUSDCTokenDispatcher { contract_address: usdc_address };
+    start_cheat_caller_address(usdc_address, get_owner_address());
+    usdc_dispatcher.mint(solver, solver_deposit_amount);
+    usdc_dispatcher.mint(withdraw_address, 1_000_000_000_000_000_000_u256); // 1000 USDC
+    stop_cheat_caller_address(usdc_address);
+
+    // Approve and deposit solver funds (approve larger amount for withdrawals)
+    approve_usdc(solver, withdraw_address, usdc_address, solver_deposit_amount * 100_u256);
+    start_cheat_caller_address(withdraw_address, solver);
+    withdraw_dispatcher.solver_deposit(solver_deposit_amount);
+    stop_cheat_caller_address(withdraw_address);
+
     // 1. User requests withdrawal
     let root = 123456789_u256;
     let nullifierHash = 987654321_u256;
@@ -80,7 +124,7 @@ fn test_basic_withdraw_flow() {
     proof.append(8);
 
     start_cheat_caller_address(withdraw_address, user);
-    withdraw_dispatcher.request_withdraw(root, nullifierHash, user, proof.span()).unwrap();
+    withdraw_dispatcher.request_withdraw(root, nullifierHash, user, proof.span());
     stop_cheat_caller_address(withdraw_address);
 
     // 2. Verify withdrawal request exists
@@ -91,7 +135,7 @@ fn test_basic_withdraw_flow() {
 
     // 3. Solver approves withdrawal
     start_cheat_caller_address(withdraw_address, solver);
-    withdraw_dispatcher.approve_withdraw(0).unwrap();
+    withdraw_dispatcher.approve_withdraw(0);
     stop_cheat_caller_address(withdraw_address);
 
     // 4. Verify withdrawal completed

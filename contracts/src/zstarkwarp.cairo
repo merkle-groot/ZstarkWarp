@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod ZstarkWarp {
     use core::num::traits::Pow;
-    use starknet::{get_block_info, get_tx_info};
+    use starknet::get_block_info;
     use crate::merkle_tree::merkle_tree::MerkleTreeComponent;
     use crate::zstarkwarp_deposit_interface::IZstarkWarpDeposit;
     use starknet::{
@@ -26,12 +26,14 @@ pub mod ZstarkWarp {
     component!(path: MerkleTreeComponent, storage: merkleTree, event: MerkleTreeEvent);
     
     #[derive(starknet::Store, Serde, Drop)]
+    #[allow(starknet::store_no_default_variant)]
     pub enum Chain {
         Starknet,
         Ztarknet
     }
 
     #[derive(starknet::Store, Serde, Drop, PartialEq)]
+    #[allow(starknet::store_no_default_variant)]
     pub enum Status {
         Pending,
         Processed
@@ -78,6 +80,7 @@ pub mod ZstarkWarp {
         // deposit
         deposit_amount: u256,
         commitments: Map<u256, bool>,
+        commitment_to_index: Map<u256, u64>,
 
         // withdraw
         fee: u256,
@@ -168,6 +171,8 @@ pub mod ZstarkWarp {
             let index = self.merkleTree._add_leaf(commitment);
             self.commitments.entry(commitment).write(true);
 
+            self.commitment_to_index.entry(commitment).write(index);
+
             self.emit(DepositEvent {
                 commitment,
                 index
@@ -180,6 +185,11 @@ pub mod ZstarkWarp {
 
         fn is_exist_commitment(self: @ContractState, commitment: u256) -> bool {
             self.commitments.entry(commitment).read()
+        }
+
+        fn get_commitment_index(self: @ContractState, commitment: u256) -> u64 {
+            assert!(self.commitments.entry(commitment).read(), "ZWD: commitment doesn't exist");
+            self.commitment_to_index.entry(commitment).read()
         }
     }
 

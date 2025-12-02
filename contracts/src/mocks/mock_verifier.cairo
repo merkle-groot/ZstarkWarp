@@ -1,7 +1,6 @@
 #[starknet::contract]
 mod MockGroth16VerifierBN254 {
-    use zstarkwarp::verifier_interface::IGroth16VerifierBN254;
-
+    
     #[storage]
     struct Storage {}
 
