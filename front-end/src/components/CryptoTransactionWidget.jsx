@@ -129,6 +129,38 @@ const CryptoTransactionWidget = () => {
     }
   }
 
+  const sendRequest = async (publicInputs, calldata) => {
+    try {
+      const response = await fetch('http://localhost:3001/api/v1/sendRequest', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          publicInputs: publicInputs,
+          calldata: calldata
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send request');
+      }
+
+      return {
+        message: result.message,
+        calldata: result.data.calldata,
+        publicInputs: result.data.publicInputs,
+        timestamp: result.data.timestamp
+      };
+    } catch (error) {
+      console.error('Error sending request:', error);
+      toast.error('Failed to send request: ' + error.message);
+      return null;
+    }
+  }
+
   const generateProof = async (event) => {
     event.preventDefault();
 
@@ -170,10 +202,40 @@ const CryptoTransactionWidget = () => {
       }
 
       const proof = await genProof(proofInput);
+
+
+      console.log('generated proof:', proof);
       const calldata = await getCalldata(proof.proof, proof.publicSignals, );
 
       // For now, just log the data - you would typically proceed with withdrawal here
-      console.log('input:', proof);
+      const publicInputs = {
+        root: proofInput.root,
+        nullifierHash: proofInput.nullifierHash,
+        receiver: proofInput.receiver
+
+      }
+
+      //
+
+      await sendRequest(publicInputs, calldata.calldata);
+      console.log('calldata:', calldata, publicInputs);
+
+      // Save calldata to file for debugging
+      const debugData = {
+        calldata: calldata,
+        publicInputs: publicInputs,
+        timestamp: new Date().toISOString()
+      };
+
+      const blob = new Blob([JSON.stringify(debugData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `calldata_debug_${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
 
     } catch (error) {
       console.error('Error generating proof:', error);

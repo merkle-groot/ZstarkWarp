@@ -11,6 +11,47 @@ const initializeDB = async () => {
     return databaseManager.getMerkleTreeDB();
 };
 
+const sendWithdrawRequest = async(publicInputs, calldata) => {
+    try{
+        const account = RunConfig.ZTARKNET.account;
+        const contractAddresses = json.parse(fs.readFileSync("./config/deployed.json"));
+        const zstarkwarpAddress = contractAddresses.ztarknet.zstarkwarp;
+
+        // // Save calldata to file for debugging
+        // const debugData = {
+        //     publicInputs: publicInputs,
+        //     calldata: calldata.slice(1),
+        //     timestamp: new Date().toISOString(),
+        //     contractAddress: zstarkwarpAddress
+        // };
+
+        // const debugFileName = `./debug_withdraw_calldata_${Date.now()}.json`;
+        // fs.writeFileSync(debugFileName, JSON.stringify(debugData, null, 2));
+        // console.log(`Saved withdraw calldata debug data to ${debugFileName}`);
+
+        // For read-only access
+        const contract = new Contract({
+            abi: Artifacts.zstarkwarp.sierra.abi,
+            address: zstarkwarpAddress,
+            providerOrAccount: account,
+        });
+
+        const tx = await contract.request_withdraw(
+            publicInputs.root,
+            publicInputs.nullifierHash,
+            publicInputs.receiver,
+            calldata.slice(1)
+        );
+
+        console.log("tx: ", tx);
+
+        await account.waitForTransaction(tx.transaction_hash);
+    } catch(e){
+        console.log("error while sending withdraw tx:", e);
+        throw e;
+    }
+}
+
 const populateCommitments = async() => {
     const provider = RunConfig.STARKNET.provider;
     const contractAddresses = json.parse(fs.readFileSync("./config/deployed.json"));
@@ -55,4 +96,4 @@ const populateCommitments = async() => {
 
 // })()
 
-module.exports = { populateCommitments };
+module.exports = { populateCommitments, sendWithdrawRequest };

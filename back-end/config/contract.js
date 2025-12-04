@@ -1,5 +1,6 @@
 
 import { Account, RpcProvider, json } from 'starknet';
+
 import fs from 'fs';
 import * as dotenv from 'dotenv'
 dotenv.config();
@@ -10,10 +11,17 @@ export const RunConfig = {
             nodeUrl: process.env.STARKNET_RPC,
         })
     },
-    "ZTARKNET": {   
+    "ZTARKNET": {
         "provider": new RpcProvider({
             nodeUrl: process.env.ZTARKNET_RPC,
-        })
+        }),
+        "account": new Account({
+                provider: new RpcProvider({
+                nodeUrl: process.env.ZTARKNET_RPC,
+            }),
+            address: process.env.ZTARKNET_ACCOUNT_ADDRESS,
+            signer: process.env.ZTARKNET_PRIVATE_KEY,
+        }),
     }
 }
 

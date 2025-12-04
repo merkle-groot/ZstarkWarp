@@ -16,7 +16,8 @@ router.get('/', (req, res) => {
     endpoints: {
       health: '/health',
       api: '/api/v1',
-      docs: '/api/docs'
+      docs: '/api/docs',
+      sendRequest: '/sendRequest'
     }
   });
 });

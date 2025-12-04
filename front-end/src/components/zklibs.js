@@ -1,6 +1,59 @@
 import { poseidon1,poseidon2 } from "poseidon-lite";
 import { getGroth16CallData, CurveId, init } from 'garaga';
 
+// Helper functions to parse Groth16 data from object format
+function parseGroth16ProofFromObject(proof, publicInputs, curveId = CurveId.BN254) {
+  return {
+    a: {
+      x: BigInt(proof.pi_a[0]),
+      y: BigInt(proof.pi_a[1]),
+      curveId: curveId
+    },
+    b: {
+      x: [BigInt(proof.pi_b[0][0]), BigInt(proof.pi_b[0][1])],
+      y: [BigInt(proof.pi_b[1][0]), BigInt(proof.pi_b[1][1])],
+      curveId: curveId
+    },
+    c: {
+      x: BigInt(proof.pi_c[0]),
+      y: BigInt(proof.pi_c[1]),
+      curveId: curveId
+    },
+    publicInputs: publicInputs.map(input => BigInt(input)),
+    curveId: curveId
+  };
+}
+
+function parseGroth16VerifyingKeyFromObject(verificationKey, curveId = CurveId.BN254) {
+  return {
+    alpha: {
+      x: BigInt(verificationKey.vk_alpha_1[0]),
+      y: BigInt(verificationKey.vk_alpha_1[1]),
+      curveId: curveId
+    },
+    beta: {
+      x: [BigInt(verificationKey.vk_beta_2[0][0]), BigInt(verificationKey.vk_beta_2[0][1])],
+      y: [BigInt(verificationKey.vk_beta_2[1][0]), BigInt(verificationKey.vk_beta_2[1][1])],
+      curveId: curveId
+    },
+    gamma: {
+      x: [BigInt(verificationKey.vk_gamma_2[0][0]), BigInt(verificationKey.vk_gamma_2[0][1])],
+      y: [BigInt(verificationKey.vk_gamma_2[1][0]), BigInt(verificationKey.vk_gamma_2[1][1])],
+      curveId: curveId
+    },
+    delta: {
+      x: [BigInt(verificationKey.vk_delta_2[0][0]), BigInt(verificationKey.vk_delta_2[0][1])],
+      y: [BigInt(verificationKey.vk_delta_2[1][0]), BigInt(verificationKey.vk_delta_2[1][1])],
+      curveId: curveId
+    },
+    ic: verificationKey.IC.map(point => ({
+      x: BigInt(point[0]),
+      y: BigInt(point[1]),
+      curveId: curveId
+    }))
+  };
+}
+
 // BN128 scalar field prime
 const CIRCOM_PRIME = BigInt(
   "21888242871839275222246405745257275088548364400416034343698204186575808495617"
@@ -42,15 +95,16 @@ export function createCommitment() {
   return { secretKey, nullifier, commitment, nullifierHash };
 }
 
-
 // Dynamic import for SnarkJS
 export async function genProof(input) {
   const snarkjs = await import('snarkjs');
   const wasmResponse = await fetch('/circuit/withdraw.wasm');
   const zkeyResponse = await fetch('/circuit/Withdraw_final.zkey');
+  const vkeyResponse = await fetch('/circuit/verification_key.json');
 
   const wasmBuffer = await wasmResponse.arrayBuffer();
   const zkeyBuffer = await zkeyResponse.arrayBuffer();
+  const vkeyData = await vkeyResponse.json();
 
   const proof = await snarkjs.groth16.fullProve(
       input,
@@ -59,6 +113,21 @@ export async function genProof(input) {
   );
   console.log(proof.proof, proof.publicSignals);
 
+  // Verify the proof immediately
+  console.log('Verifying proof...');
+  const verificationResult = await snarkjs.groth16.verify(
+      vkeyData,
+      proof.publicSignals,
+      proof.proof
+  );
+
+  console.log('Proof verification result:', verificationResult);
+
+  if (!verificationResult) {
+      throw new Error('Generated proof verification failed');
+  }
+
+  console.log('Proof verified successfully!');
 
   return proof;
 }
@@ -72,32 +141,18 @@ export async function getCalldata(proof, publicInputs) {
     const curveId = CurveId.BN254;
 
     // Load verification key from server
-    const verificationKeyResponse = await fetch('/verification_key.json');
+    const verificationKeyResponse = await fetch('/circuit/verification_key.json');
     if (!verificationKeyResponse.ok) {
       throw new Error('Failed to load verification key');
     }
     const verificationKey = await verificationKeyResponse.json();
 
-    // Format proof points for garaga
-    const groth16Proof = {
-      a: formatPoint(proof.pi_a[0], proof.pi_a[1], curveId),
-      b: formatG2Point(proof.pi_b[0], proof.pi_b[1], curveId),
-      c: formatPoint(proof.pi_c[0], proof.pi_c[1], curveId),
-      publicInputs: publicInputs.map(input => BigInt(input)),
-      curveId
-    };
-
-    // Format verification key for garaga
-    const formattedVk = {
-      alpha: formatPoint(verificationKey.vk_alpha_1[0], verificationKey.vk_alpha_1[1], curveId),
-      beta: formatG2Point(verificationKey.vk_beta_2[0], verificationKey.vk_beta_2[1], curveId),
-      gamma: formatG2Point(verificationKey.vk_gamma_2[0], verificationKey.vk_gamma_2[1], curveId),
-      delta: formatG2Point(verificationKey.vk_delta_2[0], verificationKey.vk_delta_2[1], curveId),
-      ic: verificationKey.IC.map(point => formatPoint(point[0], point[1], curveId))
-    };
+    // Use helper functions to parse proof and verification key
+    const groth16Proof = parseGroth16ProofFromObject(proof, publicInputs, curveId);
+    const vk = parseGroth16VerifyingKeyFromObject(verificationKey, curveId);
 
     // Generate calldata using garaga
-    const calldata = getGroth16CallData(groth16Proof, formattedVk, curveId);
+    const calldata = getGroth16CallData(groth16Proof, vk, curveId);
 
     // Convert all BigInt values to strings for JSON compatibility
     return {
@@ -114,20 +169,3 @@ export async function getCalldata(proof, publicInputs) {
   }
 }
 
-// Helper function to format G1 points (for browser compatibility)
-function formatPoint(x, y, curveId) {
-  return {
-    x: BigInt(x),
-    y: BigInt(y),
-    curveId
-  };
-}
-
-// Helper function to format G2 points (for browser compatibility)
-function formatG2Point(x, y, curveId) {
-  return {
-    x: [BigInt(x[0]), BigInt(x[1])],
-    y: [BigInt(y[0]), BigInt(y[1])],
-    curveId
-  };
-}

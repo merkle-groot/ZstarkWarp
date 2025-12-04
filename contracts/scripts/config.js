@@ -30,7 +30,6 @@ export const RunConfig = {
         })
     }
 }
-
 export const Artifacts = {
     "verifier": {
         "casm": json.parse(

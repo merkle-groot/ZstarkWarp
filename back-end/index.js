@@ -12,6 +12,7 @@ const indexRouter = require('./routes/index');
 const apiRouter = require('./routes/api');
 const healthRouter = require('./routes/health');
 const getRouter = require('./routes/getPath');
+const sendRequestRouter = require('./routes/sendRequest');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,6 +29,7 @@ app.use('/', indexRouter);
 app.use('/health', healthRouter);
 app.use('/api/v1', apiRouter);
 app.use('/api/v1', getRouter);
+app.use('/api/v1', sendRequestRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
