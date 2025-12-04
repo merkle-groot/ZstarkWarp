@@ -1,0 +1,12 @@
+{
+  "starknet": {
+    "mockUSDC": "0x2c3a969f915a08228f05e813b9f61f82e5249d505bbe8e21de8ebb5107f6f7a",
+    "verifier": "0x1bad86dfcc5ca69598a6025fdb6c47a4a6a969c44a21dc1a70eba943ab09797",
+    "zstarkwarp": "0x791089956adfa30bdb1f9549684a252b4ccb2661fcb101082047eca1ee6f08f"
+  },
+  "ztarknet": {
+    "mockUSDC": "0x64d6bd487bcef64c3b6c4df2713e173d9ba5fd97ab5d7fa6eefc6a9e4d9bf0",
+    "verifier": "0x2c5e1dd0dda916afbbc7ded2694301630cd5702a56764ebac7ddb596d4fdf00",
+    "zstarkwarp": "0x6e028bc7101965645225b0444a8efe90d1b30ffeb90c8cf0f5bb4d528acd04d"
+  }
+}

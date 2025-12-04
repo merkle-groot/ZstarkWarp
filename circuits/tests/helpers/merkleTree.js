@@ -30,30 +30,6 @@ class MerkleTree {
         await this._insert(element, index);
     }
 
-    async bulkInsert(elements) {
-        if(elements.length + this._layers[0].length > this.capacity){
-            throw new Error('Tree is full');
-        }
-
-        for(let i = 0; i < elements.length - 1; ++i){
-            let index = this._layers[0].length;
-            this._layers[0][index] = elements[i];
-
-            index >>= 1;
-            for(let i = 1; i <= this.levels; ++i){
-                if(index % 2 == 0){
-                    break;
-                }
-
-                this._layers[i][index] = await this._hash(
-                    this._layers[i - 1][2 * index],
-                    this._layers[i - 1][2 * index + 1]
-                );
-            }
-        }
-
-        await this.insert(elements[elements.length - 1]);
-    }
 
     getIndex(element) {
         return this._layers[0].indexOf(element)
@@ -119,6 +95,11 @@ class MerkleTree {
 
     getRoot() {
         return this._layers[0].length != 0 ? this._layers[this.levels][0] : this._zeroSubTrees[this.levels];
+    }
+
+    async getHash(left, right){
+        const result = await hash(left, right);
+        return result;
     }
 }
 

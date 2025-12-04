@@ -79,6 +79,10 @@ pub mod MerkleTreeComponent {
 
         }
 
+        fn _get_index(self: @ComponentState<TContractState>) -> u64 {
+            self.current_index.read()
+        }
+
         fn _hash(self: @ComponentState<TContractState>, left: u256, right: u256) -> u256 {
             // Convert u256 to u384
             let left_u384: u384 = left.into();
@@ -127,7 +131,7 @@ pub mod MerkleTreeComponent {
             self.roots.entry(previous_root).write(current_hash);
             self.roots.entry(current_hash).write(END_POINTER);
 
-            index
+            self.current_index.read() - 1
         }
 
         fn _get_zero_root(self: @ComponentState<TContractState>, level: u64) -> u256 {

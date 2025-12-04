@@ -2,11 +2,10 @@
   "starknet": {
     "verifier": "0x0430c9e37f280b014010d9211c59558341d65ae7a0a18dbea0b0c401412fa1a6",
     "mockUSDC": "0x07ecba91c7df1c545104440144ae52c5da8b65dd52e5af89cce06c6e81f38a07",
-    "zstarkwarp": "0x054c54cdd33eccfaee61d6ea8efa4ecdb3a32e807aef90c6596f473abfcd6e84"
+    "zstarkwarp": "0x053624d5ab7bfba455a5fec65f9259117f7869f64165194f02286649da00245b"
   },
   "ztarknet": {
-    "verifier": "0x0430c9e37f280b014010d9211c59558341d65ae7a0a18dbea0b0c401412fa1a6",
     "mockUSDC": "0x07ecba91c7df1c545104440144ae52c5da8b65dd52e5af89cce06c6e81f38a07",
-    "zstarkwarp": "0x054c54cdd33eccfaee61d6ea8efa4ecdb3a32e807aef90c6596f473abfcd6e84"
+    "zstarkwarp": "0x053624d5ab7bfba455a5fec65f9259117f7869f64165194f02286649da00245b"
   }
 }

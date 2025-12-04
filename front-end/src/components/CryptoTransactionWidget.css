@@ -264,3 +264,80 @@
 .crypto-widget-donate-button:hover {
   color: #ffffff;
 }
+
+/* File Upload Styles */
+.crypto-widget-file-upload {
+  position: relative;
+}
+
+.crypto-widget-file-input {
+  display: none;
+}
+
+.crypto-widget-file-label {
+  display: block;
+  width: 100%;
+  background-color: #ffffff;
+  border: 1px solid #9EFF9E;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.crypto-widget-file-label:hover {
+  border-color: #7ACC7E;
+  background-color: #f8fff8;
+}
+
+.crypto-widget-file-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.crypto-widget-file-success {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #22c55e;
+}
+
+.crypto-widget-file-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #666666;
+}
+
+.crypto-widget-file-icon {
+  font-size: 1.25rem;
+}
+
+.crypto-widget-file-text {
+  font-size: 0.9rem;
+  font-family: 'Fira Code', 'Courier', monospace;
+}
+
+.crypto-widget-file-details {
+  margin-top: 0.5rem;
+}
+
+.crypto-widget-file-info {
+  color: #666666;
+  font-size: 0.75rem;
+  font-family: 'Fira Code', 'Courier', monospace;
+  opacity: 0.8;
+}
+
+.connect-wallet {
+  margin-bottom: 1rem;
+}
+
+.balance {
+  margin-bottom: 1rem;
+}
+
+.mint-button {
+  margin-bottom: 1rem;
+}

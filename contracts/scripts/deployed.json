@@ -1,12 +1,12 @@
 {
   "starknet": {
-    "mockUSDC": "0x28eae05d37cef0383092ad01b1ed261e1ab6acca0d5f89fe1ca961e5e0798e8",
-    "verifier": "0x4ac572c0d2a495bb9b21076f5a253c51067b59d685242edee33553a8f92abe2",
-    "zstarkwarp": "0x74a4e41258d65099f0bfb7aae8e79d35b42573b0f75952cd9a17c60505df1ed"
+    "mockUSDC": "0x2c3a969f915a08228f05e813b9f61f82e5249d505bbe8e21de8ebb5107f6f7a",
+    "verifier": "0x1bad86dfcc5ca69598a6025fdb6c47a4a6a969c44a21dc1a70eba943ab09797",
+    "zstarkwarp": "0x791089956adfa30bdb1f9549684a252b4ccb2661fcb101082047eca1ee6f08f"
   },
   "ztarknet": {
-    "mockUSDC": "0x68be46ac241253eb6cd33d65a5895c9e554776593f1da7a09aa822dcbe5590e",
-    "verifier": "0x7981db8fbfa7113c37eb0c1b773edae9e17a975224d9e75eeb2f19caad9af68",
-    "zstarkwarp": "0x5ac1256b29f9e5422f5bff7b1ef89d8232f510a85c87a7b9561b0725a398475"
+    "mockUSDC": "0x64d6bd487bcef64c3b6c4df2713e173d9ba5fd97ab5d7fa6eefc6a9e4d9bf0",
+    "verifier": "0x2c5e1dd0dda916afbbc7ded2694301630cd5702a56764ebac7ddb596d4fdf00",
+    "zstarkwarp": "0x6e028bc7101965645225b0444a8efe90d1b30ffeb90c8cf0f5bb4d528acd04d"
   }
 }

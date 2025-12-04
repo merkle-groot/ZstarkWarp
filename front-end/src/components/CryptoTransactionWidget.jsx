@@ -6,14 +6,10 @@ import { WalletAccount, wallet } from 'starknet';
 import deployContracts from '../config/config.json';
 import usdcContractClass from '../config/dev/zstarkwarp_UsdcMock.contract_class.json';
 import zstarkwarpContractClass from "../config/dev/zstarkwarp_ZstarkWarp.contract_class.json";
-import {createCommitment} from "./zklibs.js";
+import {createCommitment, genProof, getCalldata} from "./zklibs.js";
 import toast from "react-hot-toast";
-
-toast.success("Note downloaded", {
-  duration: 2500,
-});
-
-const rpcURL = 'https://rpc.starknet-testnet.lava.build/rpc/v0_9';
+const serverURL = 'http://localhost:3001/api/v1/getPath';
+const rpcURL = 'https://api.zan.top/public/starknet-sepolia';
 
 function toJSONSafe(obj) {
   return JSON.parse(
@@ -21,22 +17,22 @@ function toJSONSafe(obj) {
   );
 }
 
-const Z_SEPOLIA = {
-  id: "SN_ZSEPOLIA",
-  chainId: "ZORG",
-  chainName: "SN_ZSEPOLIA",
-  rpcUrls: ['https://ztarknet-madara.d.karnot.xyz'],
-  nativeCurrency: {
-    type: "ERC20",
-    options: {
-      address:
-        "0x01ad102b4c4b3e40a51b6fb8a446275d600555bd63a95cdceed3e5cef8a6bc1d",
-      name: "STRK",
-      symbol: "STRK",
-      decimals: 18,
-    },
-  },
-}
+// const Z_SEPOLIA = {
+//   id: "SN_ZSEPOLIA",
+//   chainId: "ZORG",
+//   chainName: "SN_ZSEPOLIA",
+//   rpcUrls: ['https://ztarknet-madara.d.karnot.xyz'],
+//   nativeCurrency: {
+//     type: "ERC20",
+//     options: {
+//       address:
+//         "0x01ad102b4c4b3e40a51b6fb8a446275d600555bd63a95cdceed3e5cef8a6bc1d",
+//       name: "STRK",
+//       symbol: "STRK",
+//       decimals: 18,
+//     },
+//   },
+// }
 
 const CryptoTransactionWidget = () => {
   const BridgeDirections = {
@@ -49,14 +45,12 @@ const CryptoTransactionWidget = () => {
   const [zstarkwarpContract, setZstarkWarpContract] = useState(null);
   const [activeTab, setActiveTab] = useState('deposit');
   const [selectedBridge, setSelectedBridge] = useState(BridgeDirections.StarknetToZtarknet);
-  const [selectedAmount, setSelectedAmount] = useState(1);
   const [userAccount, setUserAccount] = useState(null);
   const [note, setNote] = useState('');
+  const [uploadedNoteData, setUploadedNoteData] = useState(null);
   const [recipientAddress, setRecipientAddress] = useState('');
 
   const bridges = [BridgeDirections.StarknetToZtarknet, BridgeDirections.ZtarknetToStarknet];
-  const amounts = [0.1, 1, 10, 100];
-  const tokens = ['ETH', 'BTC', 'USDC', 'USDT'];
 
   // Function to format balance from raw value (with 18 decimals) to human-readable format
   const formatBalance = (rawBalance) => {
@@ -66,20 +60,161 @@ const CryptoTransactionWidget = () => {
     return Math.round(formatted * 100) / 100; // Round to 2 decimal places
   };
 
-  const getAmountIndex = () => {
-    return amounts.findIndex(amount => amount === selectedAmount);
+  // Function to validate the uploaded JSON file
+  const validateNoteJSON = (json) => {
+    try {
+      // Check if the JSON has the required structure
+      if (!json.commitment || !json.index) {
+        return { valid: false, error: 'Missing required fields: commitment and index' };
+      }
+
+      // Check commitment structure
+      const commitment = json.commitment;
+      if (!commitment.secretKey || !commitment.nullifier || !commitment.commitment || !commitment.nullifierHash) {
+        return { valid: false, error: 'Missing required commitment fields: secretKey, nullifier, nullifierHash, commitment' };
+      }
+
+      // Check if all values are strings
+      if (typeof commitment.secretKey !== 'string' ||
+          typeof commitment.nullifier !== 'string' ||
+          typeof commitment.commitment !== 'string' ||
+          typeof commitment.nullifierHash !== 'string' ||
+          typeof json.index !== 'string') {
+        return { valid: false, error: 'All values must be strings' };
+      }
+
+      // Check if values are numeric strings (basic validation)
+      if (!/^\d+$/.test(commitment.secretKey) ||
+          !/^\d+$/.test(commitment.nullifier) ||
+          !/^\d+$/.test(commitment.commitment) ||
+          !/^\d+$/.test(commitment.nullifierHash) ||
+          !/^\d+$/.test(json.index)) {
+        return { valid: false, error: 'All values must be numeric strings' };
+      }
+
+      return { valid: true };
+    } catch (error) {
+      return { valid: false, error: 'Invalid JSON structure' };
+    }
   };
 
-  const handleAmountChange = (index) => {
-    setSelectedAmount(amounts[index]);
-  };
+  const getMerklePath = async (index, commitment) => {
+    try {
+      const response = await fetch('http://localhost:3001/api/v1/getPath', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          index: parseInt(index),
+          commitment: commitment
+        })
+      });
 
-  const getAmountProgressStyle = () => {
-    const index = getAmountIndex();
-    const progress = (index / (amounts.length - 1)) * 100;
-    return {
-      right: `${100 - progress}%`
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to get Merkle path');
+      }
+
+      return {
+        isLeft: result.data.isLeft,
+        siblings: result.data.siblings,
+        root: result.data.root
+      };
+    } catch (error) {
+      console.error('Error getting Merkle path:', error);
+      toast.error('Failed to get Merkle path: ' + error.message);
+      return null;
+    }
+  }
+
+  const generateProof = async (event) => {
+    event.preventDefault();
+
+    if (!uploadedNoteData) {
+      toast.error('Please upload a withdrawal note file first');
+      return;
+    }
+
+    if (!recipientAddress) {
+      toast.error('Please enter a recipient address');
+      return;
+    }
+
+    try {
+      toast.loading('Generating proof...', { id: 'proof-generation' });
+
+      // Get Merkle path from the server
+      const merklePath = await getMerklePath(
+        uploadedNoteData.index,
+        uploadedNoteData.commitment.commitment
+      );
+
+      if (!merklePath) {
+        toast.error('Failed to get Merkle path', { id: 'proof-generation' });
+        return;
+      }
+
+      console.log('Merkle path retrieved:', merklePath);
+
+      // TODO: Use the merklePath data to generate the zk-proof
+      // This would typically involve calling your circuit or proof generation system
+
+      toast.success('Proof generated successfully!', { id: 'proof-generation' });
+
+      const proofInput = {
+        ...uploadedNoteData.commitment,
+        ...merklePath,
+        receiver: recipientAddress
+      }
+
+      const proof = await genProof(proofInput);
+      const calldata = await getCalldata(proof.proof, proof.publicSignals, );
+
+      // For now, just log the data - you would typically proceed with withdrawal here
+      console.log('input:', proof);
+
+    } catch (error) {
+      console.error('Error generating proof:', error);
+      toast.error('Failed to generate proof: ' + error.message, { id: 'proof-generation' });
+    }
+  }
+
+  // Function to handle file upload
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Check if file is JSON
+    if (file.type !== 'application/json' && !file.name.endsWith('.json')) {
+      toast.error('Please upload a JSON file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const json = JSON.parse(e.target.result);
+        const validation = validateNoteJSON(json);
+
+        if (validation.valid) {
+          setUploadedNoteData(json);
+          setNote(JSON.stringify(json));
+          toast.success('Note file uploaded successfully');
+        } else {
+          toast.error(`Invalid file format: ${validation.error}`);
+          setUploadedNoteData(null);
+          setNote('');
+        }
+      } catch (error) {
+        toast.error('Failed to parse JSON file');
+        setUploadedNoteData(null);
+        setNote('');
+      }
     };
+
+    reader.readAsText(file);
   };
 
   const getCommitment = async() => {
@@ -357,20 +492,48 @@ const CryptoTransactionWidget = () => {
               <div className="crypto-widget-form-group">
                 <div className="crypto-widget-flex crypto-widget-flex-between crypto-widget-flex-center crypto-widget-space-x-2">
                   <label className="crypto-widget-label">
-                    Note
+                    Note File
                   </label>
                   <svg className="crypto-widget-info-icon" viewBox="0 0 12 12" fill="none">
                     <circle cx="6" cy="6" r="5" stroke="#9EFF9E" strokeWidth="1"/>
                     <path d="M6 3V6M6 9H6.01" stroke="#9EFF9E" strokeWidth="1" strokeLinecap="round"/>
                   </svg>
                 </div>
-                <input
-                  type="text"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Enter withdrawal note..."
-                  className="crypto-widget-input"
-                />
+                <div className="crypto-widget-file-upload">
+                  <input
+                    type="file"
+                    accept=".json,application/json"
+                    onChange={handleFileUpload}
+                    className="crypto-widget-file-input"
+                    id="note-file-upload"
+                  />
+                  <label htmlFor="note-file-upload" className="crypto-widget-file-label">
+                    <div className="crypto-widget-file-content">
+                      {uploadedNoteData ? (
+                        <div className="crypto-widget-file-success">
+                          <span className="crypto-widget-file-icon">✓</span>
+                          <span className="crypto-widget-file-text">
+                            Note uploaded (Index: {uploadedNoteData.index})
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="crypto-widget-file-placeholder">
+                          <span className="crypto-widget-file-icon">📁</span>
+                          <span className="crypto-widget-file-text">
+                            Click to upload withdrawal note JSON
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </label>
+                </div>
+                {uploadedNoteData && (
+                  <div className="crypto-widget-file-details">
+                    <small className="crypto-widget-file-info">
+                      Commitment: {uploadedNoteData.commitment.commitment.slice(0, 20)}...
+                    </small>
+                  </div>
+                )}
               </div>
 
               {/* Recipient Address Input */}
@@ -393,7 +556,7 @@ const CryptoTransactionWidget = () => {
               </div>
 
               {/* Withdraw Button */}
-              <button className="crypto-widget-button crypto-widget-button-secondary">
+              <button className="crypto-widget-button crypto-widget-button-secondary" onClick={generateProof}>
                 Withdraw
               </button>
             </div>

@@ -81,6 +81,7 @@ pub mod ZstarkWarp {
         deposit_amount: u256,
         commitments: Map<u256, bool>,
         commitment_to_index: Map<u256, u64>,
+        index_to_commitment: Map<u64, u256>,
 
         // withdraw
         fee: u256,
@@ -159,6 +160,24 @@ pub mod ZstarkWarp {
             self.sibling.write(siblingInfo);
         }
 
+        // Todo remove!!!
+        fn dummy_commitments(ref self: ContractState, commitment: u256) {
+            // Cannot deposit with an existing commitment
+            assert!(!self.commitments.entry(commitment).read(), "ZWD: Duplicate commitment");
+
+            // Add the leaf to the merkle tree and update the boolean state
+            let index = self.merkleTree._add_leaf(commitment);
+            self.commitments.entry(commitment).write(true);
+
+            self.commitment_to_index.entry(commitment).write(index);
+            self.index_to_commitment.entry(index).write(commitment);
+
+            self.emit(DepositEvent {
+                commitment,
+                index
+            });
+        }
+
         fn deposit(ref self: ContractState, user: ContractAddress, commitment: u256) {
             // Get token payment from the user
             let mut token_dispatcher = ERC20ABIDispatcher { contract_address: self.token.read()};
@@ -172,6 +191,7 @@ pub mod ZstarkWarp {
             self.commitments.entry(commitment).write(true);
 
             self.commitment_to_index.entry(commitment).write(index);
+            self.index_to_commitment.entry(index).write(commitment);
 
             self.emit(DepositEvent {
                 commitment,
@@ -187,9 +207,29 @@ pub mod ZstarkWarp {
             self.commitments.entry(commitment).read()
         }
 
+        fn get_len(self: @ContractState) -> u64 {
+            self.merkleTree._get_index()
+        }
+
         fn get_commitment_index(self: @ContractState, commitment: u256) -> u64 {
             assert!(self.commitments.entry(commitment).read(), "ZWD: commitment doesn't exist");
             self.commitment_to_index.entry(commitment).read()
+        }
+
+        fn get_commitments(self: @ContractState, startIndex: u64, endIndex: u64) -> Span<u256> {
+            let mut arr: Array<u256> = ArrayTrait::new();
+            assert!(startIndex <= endIndex, "invalid indices");
+            
+            let mut iter = startIndex;
+            loop{
+                arr.append(self.index_to_commitment.entry(iter).read());
+                if(iter == endIndex){
+                    break;
+                }
+                iter = iter + 1;
+            };
+
+            arr.span()
         }
     }
 
