@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './components/Navbar';
+import SocialLinks from './components/SocialLinks';
 import Bridge from './pages/Bridge';
 import About from './pages/About';
 import './App.css';
@@ -41,6 +42,7 @@ function App() {
             },
           }}
         />
+        <SocialLinks />
       </div>
     </Router>
   );
