@@ -542,7 +542,7 @@ const CryptoTransactionWidget = () => {
         </div>
 
         {/* Row 2: The Body - Border goes HERE, not around the parent */}
-        <div className="ContentBody">
+        <div className="ContentBody" style={{ position: 'relative' }}>
           {activeTab === 'deposit' ? (
             <div className="crypto-widget-section active">
               {/* Bridge Selector */}
@@ -705,6 +705,60 @@ const CryptoTransactionWidget = () => {
                   Deposit
                 </button>
               )}
+
+              {/* Explorer Links */}
+              <div style={{
+                position: 'absolute',
+                bottom: '10px',
+                right: '10px',
+                fontSize: '0.85rem',
+                fontFamily: 'Fira Code, Courier, monospace',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '5px',
+                alignItems: 'flex-end'
+              }}>
+                <a
+                  href={`https://sepolia.voyager.online/contract/${deployContracts.starknet.mockUSDC}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: '#666',
+                    textDecoration: 'none',
+                    fontSize: '0.85rem'
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.color = '#000';
+                    e.target.style.textDecoration = 'underline';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.color = '#666';
+                    e.target.style.textDecoration = 'none';
+                  }}
+                >
+                  🔗 View USDC contract
+                </a>
+                <a
+                  href={`https://sepolia.voyager.online/contract/${deployContracts.starknet.zstarkwarp}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: '#666',
+                    textDecoration: 'none',
+                    fontSize: '0.85rem'
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.color = '#000';
+                    e.target.style.textDecoration = 'underline';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.color = '#666';
+                    e.target.style.textDecoration = 'none';
+                  }}
+                >
+                  🔗 View ZstarkWarp contract
+                </a>
+              </div>
             </div>
           ) : (
             <div className="crypto-widget-section active">
@@ -791,6 +845,60 @@ const CryptoTransactionWidget = () => {
               >
                 {isWithdrawalInProgress ? 'Processing...' : 'Bridge'}
               </button>
+
+              {/* Explorer Links */}
+              <div style={{
+                position: 'absolute',
+                bottom: '10px',
+                right: '10px',
+                fontSize: '0.85rem',
+                fontFamily: 'Fira Code, Courier, monospace',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '5px',
+                alignItems: 'flex-end'
+              }}>
+                <a
+                  href={`https://explorer-zstarknet.d.karnot.xyz/contract/0x0320c1714c3e46108a308d83131158eb8e7417e01e7a4f21b822ee0de0f0238c${deployContracts.ztarknet.mockUSDC}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: '#666',
+                    textDecoration: 'none',
+                    fontSize: '0.85rem'
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.color = '#000';
+                    e.target.style.textDecoration = 'underline';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.color = '#666';
+                    e.target.style.textDecoration = 'none';
+                  }}
+                >
+                  🔗 View USDC contract
+                </a>
+                <a
+                  href={`https://explorer-zstarknet.d.karnot.xyz/contract/0x0320c1714c3e46108a308d83131158eb8e7417e01e7a4f21b822ee0de0f0238c${deployContracts.ztarknet.zstarkwarp}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: '#666',
+                    textDecoration: 'none',
+                    fontSize: '0.85rem'
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.color = '#000';
+                    e.target.style.textDecoration = 'underline';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.color = '#666';
+                    e.target.style.textDecoration = 'none';
+                  }}
+                >
+                  🔗 View ZstarkWarp contract
+                </a>
+              </div>
             </div>
           )}
           </div>
