@@ -27,6 +27,7 @@ const CryptoTransactionWidget = () => {
   const [note, setNote] = useState('');
   const [uploadedNoteData, setUploadedNoteData] = useState(null);
   const [recipientAddress, setRecipientAddress] = useState('');
+  const [isWithdrawalInProgress, setIsWithdrawalInProgress] = useState(false);
 
   const bridges = [BridgeDirections.StarknetToZtarknet, BridgeDirections.ZtarknetToStarknet];
 
@@ -141,23 +142,26 @@ const CryptoTransactionWidget = () => {
 
   const generateProof = async (event) => {
     event.preventDefault();
-
-    // Step 1: Validate inputs
-    toast.loading('Validating inputs...', { id: 'validate-inputs', duration: 5000 });
-
-    if (!uploadedNoteData) {
-      toast.error('Please upload a withdrawal note file first', { id: 'validate-inputs', duration: 5000 });
-      return;
-    }
-
-    if (!recipientAddress) {
-      toast.error('Please enter a recipient address', { id: 'validate-inputs', duration: 5000 });
-      return;
-    }
-
-    toast.success('Inputs validated successfully!', { id: 'validate-inputs', duration: 5000 });
+    setIsWithdrawalInProgress(true);
 
     try {
+      // Step 1: Validate inputs
+      toast.loading('Validating inputs...', { id: 'validate-inputs', duration: 5000 });
+
+    if (!uploadedNoteData) {
+        toast.error('Please upload a withdrawal note file first', { id: 'validate-inputs', duration: 5000 });
+        setIsWithdrawalInProgress(false);
+        return;
+      }
+
+      if (!recipientAddress) {
+        toast.error('Please enter a recipient address', { id: 'validate-inputs', duration: 5000 });
+        setIsWithdrawalInProgress(false);
+        return;
+      }
+
+      toast.success('Inputs validated successfully!', { id: 'validate-inputs', duration: 5000 });
+
       // Step 2: Get Merkle path from the server
       toast.loading('Retrieving Merkle path from server...', { id: 'merkle-path', duration: 10000 });
 
@@ -168,6 +172,7 @@ const CryptoTransactionWidget = () => {
 
       if (!merklePath) {
         toast.error('Failed to get Merkle path', { id: 'merkle-path', duration: 5000 });
+        setIsWithdrawalInProgress(false);
         return;
       }
 
@@ -240,6 +245,8 @@ const CryptoTransactionWidget = () => {
     } catch (error) {
       console.error('Error generating proof:', error);
       toast.error('Failed to generate proof: ' + error.message, { id: 'proof-generation', duration: 5000 });
+    } finally {
+      setIsWithdrawalInProgress(false);
     }
   }
 
@@ -530,7 +537,7 @@ const CryptoTransactionWidget = () => {
             onClick={() => setActiveTab('withdraw')}
             className={`Tab ${activeTab === 'withdraw' ? 'Active' : 'Inactive'}`}
           >
-            Withdraw
+            Bridge
           </button>
         </div>
 
@@ -590,11 +597,22 @@ const CryptoTransactionWidget = () => {
                     onChange={(e) => setSelectedBridge(e.target.value)}
                     className="crypto-widget-select"
                   >
-                    {bridges.map(token => (
-                      <option key={token} value={token} style={{ backgroundColor: '#000', color: '#9EFF9E' }}>
-                        {token}
-                      </option>
-                    ))}
+                    {bridges.map(token => {
+                      const isUnderDevelopment = token === BridgeDirections.ZtarknetToStarknet;
+                      return (
+                        <option
+                          key={token}
+                          value={token}
+                          disabled={isUnderDevelopment}
+                          style={{
+                            backgroundColor: isUnderDevelopment ? '#333' : '#000',
+                            color: isUnderDevelopment ? '#999' : '#9EFF9E'
+                          }}
+                        >
+                          {token}{isUnderDevelopment ? ' (under development)' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               </div>
@@ -761,8 +779,17 @@ const CryptoTransactionWidget = () => {
               </div>
 
               {/* Withdraw Button */}
-              <button className="crypto-widget-button crypto-widget-button-secondary" onClick={generateProof}>
-                Withdraw
+              <button
+                className="crypto-widget-button crypto-widget-button-secondary"
+                onClick={generateProof}
+                disabled={isWithdrawalInProgress || !uploadedNoteData || !recipientAddress}
+                style={
+                  isWithdrawalInProgress || !uploadedNoteData || !recipientAddress
+                    ? { opacity: 0.5, cursor: 'not-allowed' }
+                    : {}
+                }
+              >
+                {isWithdrawalInProgress ? 'Processing...' : 'Bridge'}
               </button>
             </div>
           )}
