@@ -1,5 +1,7 @@
 import { poseidon1,poseidon2 } from "poseidon-lite";
 import { getGroth16CallData, CurveId, init } from 'garaga';
+// Instead of dynamic import, try static import
+import * as snarkjs from 'snarkjs';
 
 // Helper functions to parse Groth16 data from object format
 function parseGroth16ProofFromObject(proof, publicInputs, curveId = CurveId.BN254) {
@@ -98,7 +100,6 @@ export function createCommitment() {
 // Dynamic import for SnarkJS
 export async function genProof(input) {
   console.log("proof input: ", input);
-  const snarkjs = await import('snarkjs');
   const wasmResponse = await fetch('/circuit/withdraw.wasm');
   const zkeyResponse = await fetch('/circuit/Withdraw_final.zkey');
   const vkeyResponse = await fetch('/circuit/verification_key.json');
