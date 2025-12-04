@@ -13,7 +13,6 @@ function App() {
         <main>
           <Routes>
             <Route path="/" element={<Bridge />} />
-            <Route path="/about" element={<About />} />
           </Routes>
         </main>
         <Toaster

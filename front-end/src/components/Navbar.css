@@ -10,22 +10,33 @@
   position: sticky;
   top: 0;
   z-index: 1000;
-  height: auto;
-  min-height: 120px;
-  padding: 1.5rem 0 1rem 0;
+  /* height: auto is default, but min-height is good */
+  min-height: 120px; 
+  /* CHANGE 1: Use Padding to control height, not margins on the child */
+  padding: 1rem 0; 
   display: flex;
   flex-direction: column;
   justify-content: center;
+  /* Optional: Adds a shadow so you can see the container edge */
+  box-shadow: 0 4px 0 #000; 
 }
 
 .nav-header {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  margin-top: 1rem;
+  /* CHANGE 2: Remove margins. Let the .navbar padding handle the spacing. */
+  margin: 0; 
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+}
+
+/* CHANGE 3: Target the Logo Text specifically */
+.nav-header h1, 
+.nav-header span {
+  /* This is the magic fix for handwritten fonts */
+  line-height: 0.8; 
+  display: block;
 }
 
 .main-logo {
@@ -33,62 +44,22 @@
   font-size: 5.15rem;
   color: #000000;
   text-decoration: none;
-  transition: opacity 0.3s ease;
+  transition: all 0.3s ease;
   display: inline-block;
   line-height: 1.2;
+  position: fixed;
+  /* top: 60px; */
+  left: calc(50% - 200px);
+  z-index: 1001;
+  transform: rotate(-5deg);
+  filter: drop-shadow(4px 4px 0px #333333);
+  padding-bottom: 20px;
 }
 
 .main-logo:hover {
+  transform: rotate(-5deg) scale(1.05);
+  filter: drop-shadow(6px 6px 0px #333333);
   opacity: 0.8;
-}
-
-.nav-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-shrink: 0;
-}
-
-.nav-menu {
-  display: flex;
-  list-style: none;
-  margin: 0;
-  gap: 2.5rem;
-  background-color: #ffffff;
-  border: 1px solid #d1d5db;
-  border-radius: 12px;
-  padding: 1rem 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
-}
-
-.nav-item {
-  margin: 0;
-}
-
-.nav-link {
-  color: #000000;
-  text-decoration: none;
-  font-weight: 400;
-  font-size: 0.95rem;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  border: none;
-  background: transparent;
-  display: block;
-}
-
-.nav-link:hover {
-  background-color: #f3f4f6;
-  opacity: 1;
-}
-
-.nav-link.active {
-  font-weight: 600;
-  background-color: #f9fafb;
 }
 
 @media screen and (max-width: 768px) {
@@ -98,12 +69,21 @@
     padding: 1rem 0 0.75rem 0;
   }
 
-  .nav-header {
+  /* .nav-header {
     margin-bottom: 1rem;
-  }
+  } */
 
   .main-logo {
     font-size: 3.605rem;
+    top: 40px;
+    left: calc(50% - 150px);
+    transform: rotate(-3deg);
+    filter: drop-shadow(3px 3px 0px #333333);
+  }
+
+  .main-logo:hover {
+    transform: rotate(-3deg) scale(1.05);
+    filter: drop-shadow(4px 4px 0px #333333);
   }
 
   .nav-container {
@@ -126,6 +106,15 @@
 @media screen and (max-width: 480px) {
   .main-logo {
     font-size: 2.575rem;
+    top: 35px;
+    left: calc(50% - 100px);
+    transform: rotate(-2deg);
+    filter: drop-shadow(2px 2px 0px #333333);
+  }
+
+  .main-logo:hover {
+    transform: rotate(-2deg) scale(1.05);
+    filter: drop-shadow(3px 3px 0px #333333);
   }
 
   .navbar {

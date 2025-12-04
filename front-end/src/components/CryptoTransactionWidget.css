@@ -1,36 +1,43 @@
-.crypto-widget {
-  height: 100%;
+/* Layer 1: The Outer Frame - 4px black border */
+.AppFrame {
+  border: 6px solid #000000;
+  padding: 40px;
   background-color: #ffffff;
+  height: 600px;
+  width: 1000px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4rem 2rem;
+  flex-direction: row;
   font-family: 'Fira Code', 'Courier', monospace;
-  margin-top: 2rem;
+  box-shadow: 4px 4px 0px #333333;
 }
 
-.crypto-widget-container {
-  width: 100%;
-  max-width: 50rem;
-  height: 100%;
+
+/* The Widget Stack - The container for our tab/body stack */
+.WidgetStack {
+  margin-top: 40px;
+  flex: 1;
   display: flex;
   flex-direction: column;
-  transform: scale(1.1);
 }
 
-/* Tabs */
-.crypto-widget-tabs {
+/* Row 1: The Tabs Row - Transparent container, NO BORDER */
+.TabsRow {
   display: flex;
   position: relative;
+  z-index: 10;
   margin-bottom: -1px;
+  background: transparent;
+  border: none;
 }
 
-.crypto-widget-tab {
+/* Base Tab Styling */
+.Tab {
   position: relative;
   z-index: 10;
   padding: 1rem 3rem;
   font-size: 1.25rem;
   font-weight: 500;
+  font-family: 'Fira Code', 'Courier', monospace;
   transition: all 0.2s;
   border: none;
   background: none;
@@ -38,39 +45,34 @@
   cursor: pointer;
 }
 
-.crypto-widget-tab:hover {
+.Tab:hover {
   color: #7ACC7A;
 }
 
-.crypto-widget-tab.active-deposit {
+/* Active Tab - slanted on right */
+.Tab.Active {
   background-color: #9EFF9E;
   color: #000000;
   clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 100%, 0 100%);
 }
 
-.crypto-widget-tab.active-withdraw {
-  background-color: #9EFF9E;
-  color: #000000;
-  clip-path: polygon(12px 0, 100% 0, 100% 100%, 0 100%);
+/* Inactive Tab - regular styling */
+.Tab.Inactive {
+  color: #9EFF9E;
+  background: none;
 }
 
-/* Content Area */
-.crypto-widget-content {
+/* Row 2: The Content Body - THIS is where the main border goes */
+.ContentBody {
   border: 5px solid #9EFF9E;
   background-color: #ffffff;
   padding: 1.5rem;
   flex: 1;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
-.crypto-widget-section {
-  display: none;
-}
-
-.crypto-widget-section.active {
-  display: block;
-}
 
 /* Form Elements */
 .crypto-widget-form-group {
@@ -86,27 +88,47 @@
   margin-bottom: 0.75rem;
 }
 
-.crypto-widget-input,
-.crypto-widget-select {
+.crypto-widget-input {
   width: 100%;
   background-color: #ffffff;
-  border: 1px solid #9EFF9E;
+  border: 2px solid #000000;
+  color: #222222;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  font-family: 'Fira Code', 'Courier', monospace;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.crypto-widget-select {
+  width: 100%;
+  background-color: #F5F5F5;
+  border: 1px solid #333333;
   color: #222222;
   padding: 1rem 1.25rem;
   font-size: 1.125rem;
   font-family: 'Fira Code', 'Courier', monospace;
   outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  cursor: pointer;
 }
 
-.crypto-widget-input:focus,
+.crypto-widget-input:focus {
+  border-color: #000000;
+  box-shadow: 2px 2px 0px #000000;
+}
+
 .crypto-widget-select:focus {
-  border-color: #7ACC7A;
+  border-color: #333333;
+  background-color: #EAEAEA;
 }
 
 .crypto-widget-input::placeholder {
-  opacity: 0.5;
-  color: #666666;
+  opacity: 0.7;
+  color: #444444;
 }
 
 .crypto-widget-select-wrapper {
@@ -114,99 +136,22 @@
 }
 
 .crypto-widget-select-wrapper::after {
-  content: '';
+  content: '▼';
   position: absolute;
   right: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 8px solid #7ACC7A;
+  font-size: 0.75rem;
+  color: #333333;
   pointer-events: none;
-}
-
-/* Amount Stepper */
-.crypto-widget-amount-stepper {
-  margin-top: 1rem;
-}
-
-.crypto-widget-amount-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.875rem;
-  color: #666666;
-  opacity: 0.8;
-  margin-bottom: 1rem;
-}
-
-.crypto-widget-amount-slider {
-  position: relative;
-  margin-bottom: 0.75rem;
-}
-
-.crypto-widget-amount-line {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: #DDDDDD;
-  transform: translateY(-50%);
-}
-
-.crypto-widget-amount-progress {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  height: 2px;
-  background-color: #9EFF9E;
-  transform: translateY(-50%);
-  transition: right 0.3s ease;
-}
-
-.crypto-widget-amount-points {
-  display: flex;
-  justify-content: space-between;
-  position: relative;
-  z-index: 1;
-}
-
-.crypto-widget-amount-point {
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 50%;
-  border: 2px solid #DDDDDD;
-  background-color: #ffffff;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.crypto-widget-amount-point:hover {
-  border-color: #7ACC7A;
-  transform: scale(1.1);
-}
-
-.crypto-widget-amount-point.active {
-  background-color: #9EFF9E;
-  border-color: #9EFF9E;
-  transform: scale(1.25);
-}
-
-.crypto-widget-amount-display {
-  text-align: center;
-  font-size: 1.25rem;
-  color: #9EFF9E;
-  font-weight: 500;
-  margin-top: 0.75rem;
+  font-family: 'Fira Code', 'Courier', monospace;
 }
 
 /* Buttons */
 .crypto-widget-button {
   width: 100%;
   padding: 1rem 1.5rem;
-  font-size: 1.25rem;
+  font-size: 1rem;
   font-weight: 500;
   font-family: 'Fira Code', 'Courier', monospace;
   transition: all 0.2s;
@@ -218,16 +163,30 @@
   background-color: #9EFF9E;
   color: #222222;
   font-weight: 500;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px #000000;
 }
 
 .crypto-widget-button-primary:hover {
   background-color: #7ACC7A;
 }
 
+.crypto-widget-button-primary:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px #000000;
+}
+
 .crypto-widget-button-secondary {
-  border: 1px solid #9EFF9E;
-  color: #7ACC7A;
-  background-color: transparent;
+  background-color: #9EFF9E;
+  color: #222222;
+  font-weight: 500;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.crypto-widget-button-secondary:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px #000000;
 }
 
 /* Flex utilities */
@@ -253,20 +212,6 @@
   height: 12px;
 }
 
-.crypto-widget-donate-button {
-  background: none;
-  border: none;
-  color: #9EFF9E;
-  font-size: 0.75rem;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.2s;
-}
-
-.crypto-widget-donate-button:hover {
-  color: #ffffff;
-}
-
 /* File Upload Styles */
 .crypto-widget-file-upload {
   position: relative;
@@ -279,16 +224,15 @@
 .crypto-widget-file-label {
   display: block;
   width: 100%;
-  background-color: #ffffff;
-  border: 1px solid #9EFF9E;
+  background-color: #f9f9f9;
+  border: 2px dashed #000000;
   padding: 0.75rem 1rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .crypto-widget-file-label:hover {
-  border-color: #7ACC7E;
-  background-color: #f8fff8;
+  background-color: #f0f0f0;
 }
 
 .crypto-widget-file-content {
@@ -342,4 +286,13 @@
 
 .mint-button {
   margin-bottom: 1rem;
+}
+
+/* Section visibility */
+.crypto-widget-section {
+  display: none;
+}
+
+.crypto-widget-section.active {
+  display: block;
 }

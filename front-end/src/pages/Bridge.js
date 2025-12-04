@@ -1,11 +1,10 @@
 import CryptoTransactionWidget from '../components/CryptoTransactionWidget';
+import './Bridge.css';
 
 function Bridge() {
   return (
-    <div className="h-full bg-white flex flex-col items-center overflow-hidden">
-      <div className="flex-1 flex items-center justify-center w-full">
-        <CryptoTransactionWidget />
-      </div>
+    <div className="bridge-container">
+      <CryptoTransactionWidget />
     </div>
   );
 }

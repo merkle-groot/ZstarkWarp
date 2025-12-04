@@ -8,6 +8,7 @@ import usdcContractClass from '../config/dev/zstarkwarp_UsdcMock.contract_class.
 import zstarkwarpContractClass from "../config/dev/zstarkwarp_ZstarkWarp.contract_class.json";
 import {createCommitment, genProof, getCalldata} from "./zklibs.js";
 import toast from "react-hot-toast";
+
 const serverURL = deployContracts.urls.backend + deployContracts.apiEndpoints.getPath;
 const rpcURL = deployContracts.urls.rpc;
 
@@ -514,26 +515,27 @@ const CryptoTransactionWidget = () => {
 
 
   return (
-    <div className="crypto-widget">
-      <div className="crypto-widget-container">
-        {/* Tabs */}
-        <div className="crypto-widget-tabs">
+    <div className="AppFrame">
+      {/* The Widget Stack */}
+      <div className="WidgetStack">
+        {/* Row 1: The Tabs */}
+        <div className="TabsRow">
           <button
             onClick={() => setActiveTab('deposit')}
-            className={`crypto-widget-tab ${activeTab === 'deposit' ? 'active-deposit' : ''}`}
+            className={`Tab ${activeTab === 'deposit' ? 'Active' : 'Inactive'}`}
           >
             Deposit
           </button>
           <button
             onClick={() => setActiveTab('withdraw')}
-            className={`crypto-widget-tab ${activeTab === 'withdraw' ? 'active-withdraw' : ''}`}
+            className={`Tab ${activeTab === 'withdraw' ? 'Active' : 'Inactive'}`}
           >
             Withdraw
           </button>
         </div>
 
-        {/* Content Area */}
-        <div className="crypto-widget-content">
+        {/* Row 2: The Body - Border goes HERE, not around the parent */}
+        <div className="ContentBody">
           {activeTab === 'deposit' ? (
             <div className="crypto-widget-section active">
               {/* Bridge Selector */}
@@ -544,20 +546,20 @@ const CryptoTransactionWidget = () => {
                   </label>
                   {userAccount && (
                     <div style={{
-                      display: 'flex',
+                      display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '8px'
+                      gap: '4px',
+                      backgroundColor: '#EEE',
+                      borderRadius: '12px',
+                      padding: '4px 8px',
+                      fontSize: '0.8rem',
+                      fontFamily: 'Fira Code, Courier, monospace'
                     }}>
-                      <div style={{
-                        fontSize: '12px',
-                        color: '#000000',
-                        fontFamily: 'monospace',
-                        backgroundColor: '#f0f0f0',
-                        padding: '2px 6px',
-                        borderRadius: '4px'
+                      <span style={{
+                        color: '#222222'
                       }}>
                         {userAccount.address.slice(0, 6)}...{userAccount.address.slice(-4)}
-                      </div>
+                      </span>
                       <button
                         onClick={() => setUserAccount(null)}
                         style={{
@@ -596,7 +598,7 @@ const CryptoTransactionWidget = () => {
                   </select>
                 </div>
               </div>
-              
+
               <div className="connect-wallet">
                 {!userAccount && (
                   <button
@@ -608,35 +610,63 @@ const CryptoTransactionWidget = () => {
                   </button>
                 )}
               </div>
-              
-              {/* Balance */}
-              {
-                userAccount != null?
-                  (
-                    <div className="crypto-widget-form-group" style={{ paddingTop: '12px', paddingBottom: '6px' }}>
-                      <label className="crypto-widget-label" style={{ margin: 0, textAlign: usdcBalance == 0 ? 'center' : 'left', display: 'block', marginBottom: '1rem' }}>
-                        Balance: {usdcBalance} USDC
-                      </label>
 
-                      {
-                        usdcBalance == 0?
-                          (
-                            <button
-                              className="crypto-widget-button crypto-widget-button-primary"
-                              onClick={mintUsdc}
-                              aria-label="mint usdc"
-                            >
-                              Mint USDC
-                            </button>
-                          ): (
-                            <div></div>
-                          )
-                      }
+              {/* Balance Section with Receipt Divider */}
+              {
+                userAccount != null && (
+                  <>
+                    <div style={{
+                      width: '100%',
+                      height: '1px',
+                      borderBottom: '2px dashed #333333',
+                      margin: '1rem 0'
+                    }} />
+
+                    <div className="crypto-widget-form-group" style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '1rem'
+                    }}>
+                      <span style={{
+                        fontSize: '0.875rem',
+                        color: '#444444',
+                        fontFamily: 'Fira Code, Courier, monospace',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        fontWeight: 500
+                      }}>
+                        AVAILABLE
+                      </span>
+
+                      <span style={{
+                        color: '#000',
+                        fontWeight: 600,
+                        backgroundColor: 'rgba(158, 255, 158, 0.1)',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        fontSize: '0.875rem',
+                        fontFamily: 'Fira Code, Courier, monospace'
+                      }}>
+                        {usdcBalance} USDC
+                      </span>
                     </div>
-                  ):(
-                    <div></div>
-                  )
+                  </>
+                )
               }
+
+              {/* Mint Button - Only show if balance is 0 */}
+              {userAccount && usdcBalance == 0 && (
+                <div className="crypto-widget-form-group">
+                  <button
+                    className="crypto-widget-button crypto-widget-button-primary"
+                    onClick={mintUsdc}
+                    aria-label="mint usdc"
+                  >
+                    Mint USDC
+                  </button>
+                </div>
+              )}
 
               {/* Deposit Button */}
               {userAccount ? (
@@ -667,8 +697,8 @@ const CryptoTransactionWidget = () => {
                     Note File
                   </label>
                   <svg className="crypto-widget-info-icon" viewBox="0 0 12 12" fill="none">
-                    <circle cx="6" cy="6" r="5" stroke="#9EFF9E" strokeWidth="1"/>
-                    <path d="M6 3V6M6 9H6.01" stroke="#9EFF9E" strokeWidth="1" strokeLinecap="round"/>
+                    <circle cx="6" cy="6" r="5" stroke="#000000" strokeWidth="2"/>
+                    <path d="M6 3V6M6 9H6.01" stroke="#000000" strokeWidth="2" strokeLinecap="round"/>
                   </svg>
                 </div>
                 <div className="crypto-widget-file-upload">
@@ -708,16 +738,19 @@ const CryptoTransactionWidget = () => {
                 )}
               </div>
 
+              {/* Receipt Divider between Note and Recipient */}
+              <div style={{
+                width: '100%',
+                height: '1px',
+                borderBottom: '2px dashed #333333',
+                margin: '1rem 0'
+              }} />
+
               {/* Recipient Address Input */}
               <div className="crypto-widget-form-group">
-                <div className="crypto-widget-flex crypto-widget-flex-between crypto-widget-flex-center">
-                  <label className="crypto-widget-label">
-                    Recipient Address
-                  </label>
-                  <button className="crypto-widget-donate-button">
-                    Donate
-                  </button>
-                </div>
+                <label className="crypto-widget-label">
+                  Recipient Address
+                </label>
                 <input
                   type="text"
                   value={recipientAddress}
@@ -733,8 +766,8 @@ const CryptoTransactionWidget = () => {
               </button>
             </div>
           )}
+          </div>
         </div>
-      </div>
     </div>
   );
 };
