@@ -1,6 +1,7 @@
 import { Account, Contract, RpcProvider, CallData, constants, json } from 'starknet';
 import {RunConfig, Artifacts} from './config.js';
 import fs from 'fs';
+// import config from '../config/config.js';
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -75,7 +76,7 @@ const deployContract = async(classHashes, artifacts, account) => {
 
     // Wait 30 seconds before next deployment
     console.log("Waiting 30 seconds before next deployment...");
-    await sleep(30000);
+    await sleep(10000);
 
     try {
         const result = await Contract.factory({
@@ -93,7 +94,8 @@ const deployContract = async(classHashes, artifacts, account) => {
 
     // Wait 30 seconds before next deployment
     console.log("Waiting 30 seconds before next deployment...");
-    await sleep(30000);
+    await sleep(10000);
+
 
     try {
         const result = await Contract.factory({
@@ -169,7 +171,7 @@ const main = async() => {
 // const privateKey = process.env.ZTARKNET_PRIVATE_KEY;
 
 // const provider = new RpcProvider({
-//     nodeUrl: "https://ztarknet-madara.d.karnot.xyz"
+//     nodeUrl: config.urls.ztarknetRpc
 // });
 // const account = new Account({
 //     provider: provider,

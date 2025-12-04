@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const databaseManager = require('../services/databaseManager');
+const config = require('../config/config');
 
 /**
  * @api {get} /api/v1 API Information
@@ -32,7 +33,7 @@ router.get('/', (req, res) => {
       }
     ],
     documentation: '/api/docs',
-    github: 'https://github.com/your-repo/zstarkwarp'
+    github: config.urls.github
   });
 });
 

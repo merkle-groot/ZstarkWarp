@@ -12,27 +12,6 @@ function Navbar() {
           ZStarkWarp
         </Link>
       </div>
-
-      <div className="nav-container">
-        <ul className="nav-menu">
-          <li className="nav-item">
-            <Link
-              to="/"
-              className={`nav-link ${location.pathname === '/bridge' ? 'active' : ''}`}
-            >
-              Bridge
-            </Link>
-          </li>
-          <li className="nav-item">
-            <Link
-              to="/about"
-              className={`nav-link ${location.pathname === '/about' ? 'active' : ''}`}
-            >
-              About
-            </Link>
-          </li>
-        </ul>
-      </div>
     </nav>
   );
 }

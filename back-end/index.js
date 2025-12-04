@@ -4,8 +4,12 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 require('dotenv').config();
 
-// Import database manager
+// Import database manager and config
 const databaseManager = require('./services/databaseManager');
+const config = require('./config/config');
+
+// Import approval scheduler
+const { startPeriodicApproval } = require('./middleware/fetchCommitments');
 
 // Import routes
 const indexRouter = require('./routes/index');
@@ -50,19 +54,61 @@ app.use((req, res) => {
 
 // Initialize databases and start server
 async function startServer() {
+  let approvalScheduler = null;
+
   try {
     console.log('🔧 Initializing databases...');
     await databaseManager.initialize();
     console.log('✅ Databases initialized successfully');
 
+    // Start approval scheduler
+    const approvalInterval = process.env.APPROVAL_INTERVAL_SECONDS ?
+        parseInt(process.env.APPROVAL_INTERVAL_SECONDS, 10) : 30;
+
+    console.log(`🔄 Starting approval scheduler (${approvalInterval}s interval)...`);
+    approvalScheduler = await startPeriodicApproval(approvalInterval);
+    console.log('✅ Approval scheduler started');
+
     // Start server
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`🚀 Zstarkwarp API Server running on port ${PORT}`);
-      console.log(`📍 Health check: http://localhost:${PORT}/health`);
-      console.log(`📍 API docs: http://localhost:${PORT}/api/v1`);
+      console.log(`📍 Health check: ${config.urls.backend}:${PORT}${config.apiEndpoints.health}`);
+      console.log(`📍 API docs: ${config.urls.backend}:${PORT}${config.apiEndpoints.docs}`);
     });
+
+    // Handle graceful shutdown
+    const gracefulShutdown = async (signal) => {
+      console.log(`\n🛑 Received ${signal}. Shutting down gracefully...`);
+
+      // Stop the server
+      server.close(async () => {
+        console.log('📡 HTTP server closed');
+
+        // Stop approval scheduler
+        if (approvalScheduler) {
+          await approvalScheduler.stop();
+        }
+
+        // Close database connections
+        await databaseManager.close();
+
+        console.log('✅ Graceful shutdown completed');
+        process.exit(0);
+      });
+    };
+
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
   } catch (error) {
-    console.error('❌ Failed to initialize databases:', error);
+    console.error('❌ Failed to start server:', error);
+
+    // Cleanup on startup error
+    if (approvalScheduler) {
+      await approvalScheduler.stop();
+    }
+    await databaseManager.close();
+
     process.exit(1);
   }
 }

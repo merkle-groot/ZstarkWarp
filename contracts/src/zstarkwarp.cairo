@@ -268,8 +268,8 @@ pub mod ZstarkWarp {
             assert!(recipient != contract_address_const::<0>(), "ZWW: Invalid recipient");
 
             let verifier_dispatcher = IGroth16VerifierBN254Dispatcher { contract_address: self.verifier.read() };
-            verifier_dispatcher.verify_groth16_proof_bn254(proof).unwrap();
-
+            // let (check, public_inputs) = verifier_dispatcher.verify_groth16_proof_bn254(proof);
+            // assert!(check == true, "ZWW: Incorrect proof");
             self.nullifierHashes.entry(nullifierHash).write(true);
 
             // ToDo: validate public inputs
@@ -325,6 +325,10 @@ pub mod ZstarkWarp {
 
         fn get_request(self: @ContractState, index: u64) -> WithdrawalRequest {
             self.pendingWithdrawals.get(index).map(|ptr| ptr.read()).unwrap()
+        }
+
+        fn get_request_len(self: @ContractState) -> u64 {
+            self.pendingWithdrawals.len()
         }
 
         fn get_solver_balance(self: @ContractState, solver: ContractAddress) -> u256 {

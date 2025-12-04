@@ -20,4 +20,5 @@ pub trait IZstarkWarpDWithdraw<TContractState> {
     ); 
     fn get_withdrawal_info(self: @TContractState) -> WithdrawalInfo;
     fn get_request(self: @TContractState, index: u64) -> WithdrawalRequest;
+    fn get_request_len(self: @TContractState) -> u64;
 }

@@ -3,36 +3,13 @@ import { Contract, config, constants, json, uint256 } from 'starknet';
 import './CryptoTransactionWidget.css';
 import { connect } from '@starknet-io/get-starknet';
 import { WalletAccount, wallet } from 'starknet';
-import deployContracts from '../config/config.json';
+import deployContracts from '../config/config.js';
 import usdcContractClass from '../config/dev/zstarkwarp_UsdcMock.contract_class.json';
 import zstarkwarpContractClass from "../config/dev/zstarkwarp_ZstarkWarp.contract_class.json";
 import {createCommitment, genProof, getCalldata} from "./zklibs.js";
 import toast from "react-hot-toast";
-const serverURL = 'http://localhost:3001/api/v1/getPath';
-const rpcURL = 'https://api.zan.top/public/starknet-sepolia';
-
-function toJSONSafe(obj) {
-  return JSON.parse(
-    JSON.stringify(obj, (_, v) => (typeof v === "bigint" ? v.toString() : v))
-  );
-}
-
-// const Z_SEPOLIA = {
-//   id: "SN_ZSEPOLIA",
-//   chainId: "ZORG",
-//   chainName: "SN_ZSEPOLIA",
-//   rpcUrls: ['https://ztarknet-madara.d.karnot.xyz'],
-//   nativeCurrency: {
-//     type: "ERC20",
-//     options: {
-//       address:
-//         "0x01ad102b4c4b3e40a51b6fb8a446275d600555bd63a95cdceed3e5cef8a6bc1d",
-//       name: "STRK",
-//       symbol: "STRK",
-//       decimals: 18,
-//     },
-//   },
-// }
+const serverURL = deployContracts.urls.backend + deployContracts.apiEndpoints.getPath;
+const rpcURL = deployContracts.urls.rpc;
 
 const CryptoTransactionWidget = () => {
   const BridgeDirections = {
@@ -100,7 +77,7 @@ const CryptoTransactionWidget = () => {
 
   const getMerklePath = async (index, commitment) => {
     try {
-      const response = await fetch('http://localhost:3001/api/v1/getPath', {
+      const response = await fetch(serverURL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +108,7 @@ const CryptoTransactionWidget = () => {
 
   const sendRequest = async (publicInputs, calldata) => {
     try {
-      const response = await fetch('http://localhost:3001/api/v1/sendRequest', {
+      const response = await fetch(deployContracts.urls.backend + deployContracts.apiEndpoints.sendRequest, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -164,36 +141,40 @@ const CryptoTransactionWidget = () => {
   const generateProof = async (event) => {
     event.preventDefault();
 
+    // Step 1: Validate inputs
+    toast.loading('Validating inputs...', { id: 'validate-inputs', duration: 5000 });
+
     if (!uploadedNoteData) {
-      toast.error('Please upload a withdrawal note file first');
+      toast.error('Please upload a withdrawal note file first', { id: 'validate-inputs', duration: 5000 });
       return;
     }
 
     if (!recipientAddress) {
-      toast.error('Please enter a recipient address');
+      toast.error('Please enter a recipient address', { id: 'validate-inputs', duration: 5000 });
       return;
     }
 
-    try {
-      toast.loading('Generating proof...', { id: 'proof-generation' });
+    toast.success('Inputs validated successfully!', { id: 'validate-inputs', duration: 5000 });
 
-      // Get Merkle path from the server
+    try {
+      // Step 2: Get Merkle path from the server
+      toast.loading('Retrieving Merkle path from server...', { id: 'merkle-path', duration: 10000 });
+
       const merklePath = await getMerklePath(
         uploadedNoteData.index,
         uploadedNoteData.commitment.commitment
       );
 
       if (!merklePath) {
-        toast.error('Failed to get Merkle path', { id: 'proof-generation' });
+        toast.error('Failed to get Merkle path', { id: 'merkle-path', duration: 5000 });
         return;
       }
 
+      toast.success('Merkle path retrieved successfully!', { id: 'merkle-path', duration: 5000 });
       console.log('Merkle path retrieved:', merklePath);
 
-      // TODO: Use the merklePath data to generate the zk-proof
-      // This would typically involve calling your circuit or proof generation system
-
-      toast.success('Proof generated successfully!', { id: 'proof-generation' });
+      // Step 3: Prepare proof inputs
+      toast.loading('Preparing proof inputs...', { id: 'prepare-inputs', duration: 5000 });
 
       const proofInput = {
         ...uploadedNoteData.commitment,
@@ -201,26 +182,41 @@ const CryptoTransactionWidget = () => {
         receiver: recipientAddress
       }
 
+      toast.success('Proof inputs prepared!', { id: 'prepare-inputs', duration: 5000 });
+
+      // Step 4: Generate zk-proof
+      toast.loading('Generating zero-knowledge proof...', { id: 'generate-proof', duration: 15000 });
+
       const proof = await genProof(proofInput);
 
-
+      toast.success('Proof generated successfully!', { id: 'generate-proof', duration: 5000 });
       console.log('generated proof:', proof);
-      const calldata = await getCalldata(proof.proof, proof.publicSignals, );
 
-      // For now, just log the data - you would typically proceed with withdrawal here
+      // Step 5: Generate calldata
+      toast.loading('Generating calldata for transaction...', { id: 'generate-calldata', duration: 10000 });
+
+      const calldata = await getCalldata(proof.proof, proof.publicSignals);
+
+      toast.success('Calldata generated!', { id: 'generate-calldata', duration: 5000 });
+
+      // Step 6: Prepare public inputs
       const publicInputs = {
         root: proofInput.root,
         nullifierHash: proofInput.nullifierHash,
         receiver: proofInput.receiver
-
       }
 
-      //
+      // Step 7: Send transaction
+      toast.loading('Sending transaction to blockchain...', { id: 'send-transaction', duration: 15000 });
 
       await sendRequest(publicInputs, calldata.calldata);
+
+      toast.success('Transaction sent successfully!', { id: 'send-transaction', duration: 5000 });
       console.log('calldata:', calldata, publicInputs);
 
-      // Save calldata to file for debugging
+      // Step 8: Save debug data
+      toast.loading('Saving debug data...', { id: 'save-debug', duration: 5000 });
+
       const debugData = {
         calldata: calldata,
         publicInputs: publicInputs,
@@ -237,9 +233,12 @@ const CryptoTransactionWidget = () => {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
+      toast.success('Debug data saved!', { id: 'save-debug', duration: 5000 });
+      toast.success('All operations completed successfully!', { id: 'final-success', duration: 5000 });
+
     } catch (error) {
       console.error('Error generating proof:', error);
-      toast.error('Failed to generate proof: ' + error.message, { id: 'proof-generation' });
+      toast.error('Failed to generate proof: ' + error.message, { id: 'proof-generation', duration: 5000 });
     }
   }
 
@@ -281,11 +280,19 @@ const CryptoTransactionWidget = () => {
 
   const getCommitment = async() => {
     try {
+      // Step 1: Create commitment
+      toast.loading('Creating cryptographic commitment...', { id: 'create-commitment', duration: 10000 });
+
       console.log("creating commitment...");
       const commitment = await createCommitment();
       console.log("commitment created", commitment);
 
-       // Encode ERC20 approve amount
+      toast.success('Commitment created!', { id: 'create-commitment', duration: 5000 });
+
+      // Step 2: Prepare transaction
+      toast.loading('Preparing transaction data...', { id: 'prepare-tx', duration: 5000 });
+
+      // Encode ERC20 approve amount
       const amount_u256 = uint256.bnToUint256(100000000000000000000n);
       const commitment_u256 = uint256.bnToUint256(commitment.commitment);
 
@@ -309,20 +316,44 @@ const CryptoTransactionWidget = () => {
         ]
       };
 
-      console.log("sending multicall...");
+      toast.success('Transaction data prepared!', { id: 'prepare-tx', duration: 5000 });
 
+      // Step 3: Execute multicall transaction
+      toast.loading('Executing multicall transaction...', { id: 'execute-tx', duration: 10000 });
+
+      console.log("sending multicall...");
       const tx = await userAccount.execute([approveCall, depositCall]);
 
+      toast.success('Transaction sent to network!', { id: 'execute-tx', duration: 5000 });
       console.log("multicall tx sent:", tx.transaction_hash);
 
-      // Wait for confirmation
+      // Step 4: Wait for transaction confirmation
+      toast.loading('Waiting for transaction confirmation...', {
+        id: 'confirm-tx',
+        duration: Infinity
+      });
+
       await userAccount.waitForTransaction(tx.transaction_hash);
 
+      toast.success('Transaction confirmed!', { id: 'confirm-tx', duration: 5000 });
       console.log("deposit done");
+
+      // Refresh balance after successful deposit
+      const rawBalance = await usdcContract.balance_of(userAccount.address);
+      setUsdcBalance(formatBalance(rawBalance));
+      console.log("Updated balance after deposit:", formatBalance(rawBalance));
+
+      // Step 5: Get commitment index
+      toast.loading('Retrieving commitment index...', { id: 'get-index', duration: 10000 });
 
       const index = await zstarkwarpContract.get_commitment_index(
         commitment.commitment
       );
+
+      toast.success('Commitment index retrieved!', { id: 'get-index', duration: 5000 });
+
+      // Step 6: Prepare and save note
+      toast.loading('Creating and saving note file...', { id: 'save-note', duration: 5000 });
 
       const note = {
         commitment,
@@ -347,36 +378,62 @@ const CryptoTransactionWidget = () => {
 
       // Cleanup
       URL.revokeObjectURL(url);
-      toast.success("Note downloaded");
+
+      toast.success('Note file saved successfully!', { id: 'save-note', duration: 5000 });
+      toast.success('Deposit completed successfully!', { id: 'deposit-complete', duration: 5000 });
     } catch (e){
       console.log("error while creating commitment", e);
+      toast.error('Deposit failed: ' + e.message, { id: 'deposit-error', duration: 5000 });
     }
   }
 
   const mintUsdc = async() => {
     try {
-      // Multicall-style single call
-      const tx = await userAccount.execute({
+      // Step 1: Prepare mint transaction
+      toast.loading('Preparing mint transaction...', { id: 'prepare-mint', duration: 5000 });
+
+      const mintCall = {
         contractAddress: usdcContract.address,
         entrypoint: "mint_user",
         calldata: [userAccount.address]
-      });
+      };
 
+      toast.success('Mint transaction prepared!', { id: 'prepare-mint', duration: 5000 });
+
+      // Step 2: Execute mint transaction
+      toast.loading('Executing mint transaction...', { id: 'execute-mint', duration: 10000 });
+
+      const tx = await userAccount.execute(mintCall);
+
+      toast.success('Mint transaction sent to network!', { id: 'execute-mint', duration: 5000 });
       console.log("Mint tx:", tx.transaction_hash);
 
-      // Wait for L2 confirmation
+      // Step 3: Wait for transaction confirmation
+      toast.loading('Waiting for mint confirmation...', {
+        id: 'confirm-mint',
+        duration: Infinity
+      });
+
       await userAccount.waitForTransaction(tx.transaction_hash);
 
+      toast.success('Mint transaction confirmed!', { id: 'confirm-mint', duration: 5000 });
       console.log("Mint confirmed");
 
+      // Step 4: Update balance
+      toast.loading('Updating USDC balance...', { id: 'update-balance', duration: 5000 });
 
-      // Reload balance after successful mint
       const rawBalance = await usdcContract.balance_of(userAccount.address);
       setUsdcBalance(formatBalance(rawBalance));
+
+      toast.success('Balance updated successfully!', { id: 'update-balance', duration: 5000 });
       console.log("Updated raw balance after mint: ", rawBalance.toString());
       console.log("Updated formatted balance: ", formatBalance(rawBalance));
+
+      toast.success('USDC minted successfully!', { id: 'mint-complete', duration: 5000 });
+
     } catch (e) {
       console.log("error while minting usdc:", e);
+      toast.error('Mint failed: ' + e.message, { id: 'mint-error', duration: 5000 });
     }
   }
 
@@ -481,9 +538,50 @@ const CryptoTransactionWidget = () => {
             <div className="crypto-widget-section active">
               {/* Bridge Selector */}
               <div className="crypto-widget-form-group">
-                <label className="crypto-widget-label">
-                  Bridge USDC
-                </label>
+                <div className="crypto-widget-flex crypto-widget-flex-between crypto-widget-flex-center">
+                  <label className="crypto-widget-label">
+                    Bridge USDC
+                  </label>
+                  {userAccount && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <div style={{
+                        fontSize: '12px',
+                        color: '#000000',
+                        fontFamily: 'monospace',
+                        backgroundColor: '#f0f0f0',
+                        padding: '2px 6px',
+                        borderRadius: '4px'
+                      }}>
+                        {userAccount.address.slice(0, 6)}...{userAccount.address.slice(-4)}
+                      </div>
+                      <button
+                        onClick={() => setUserAccount(null)}
+                        style={{
+                          background: '#ff4444',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '16px',
+                          height: '16px',
+                          fontSize: '12px',
+                          lineHeight: '1',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 'bold'
+                        }}
+                        title="Disconnect wallet"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <div className="crypto-widget-select-wrapper">
                   <select
                     value={selectedBridge}
@@ -500,38 +598,38 @@ const CryptoTransactionWidget = () => {
               </div>
               
               <div className="connect-wallet">
-                <button
-                  className="crypto-widget-button crypto-widget-button-primary"
-                  onClick={connectWallet}
-                  aria-label="Connect to Ztarknet"
-                >
-                  {userAccount? `Connected to ${userAccount.address.slice(0,5)}...${userAccount.address.slice(-2)}`: "Connect Wallet"}
-                </button>
+                {!userAccount && (
+                  <button
+                    className="crypto-widget-button crypto-widget-button-primary"
+                    onClick={connectWallet}
+                    aria-label="Connect to Ztarknet"
+                  >
+                    Connect Wallet
+                  </button>
+                )}
               </div>
               
               {/* Balance */}
               {
-                userAccount != null? 
+                userAccount != null?
                   (
-                    <div className="balance">
-                      <label className="crypto-widget-label">
+                    <div className="crypto-widget-form-group" style={{ paddingTop: '12px', paddingBottom: '6px' }}>
+                      <label className="crypto-widget-label" style={{ margin: 0, textAlign: usdcBalance == 0 ? 'center' : 'left', display: 'block', marginBottom: '1rem' }}>
                         Balance: {usdcBalance} USDC
                       </label>
 
                       {
                         usdcBalance == 0?
                           (
-                            <div className="mint-button">
-                              <button
-                                className="crypto-widget-button crypto-widget-button-primary"
-                                onClick={mintUsdc}
-                                aria-label="mint usdc"
-                              >
-                                Mint USDC
-                              </button>
-                            </div>  
+                            <button
+                              className="crypto-widget-button crypto-widget-button-primary"
+                              onClick={mintUsdc}
+                              aria-label="mint usdc"
+                            >
+                              Mint USDC
+                            </button>
                           ): (
-                            <div> </div>
+                            <div></div>
                           )
                       }
                     </div>
@@ -541,12 +639,24 @@ const CryptoTransactionWidget = () => {
               }
 
               {/* Deposit Button */}
-              <button 
-                className="crypto-widget-button crypto-widget-button-primary"
-                onClick={getCommitment}
-              >
-                Deposit
-              </button>
+              {userAccount ? (
+                <button
+                  className="crypto-widget-button crypto-widget-button-primary"
+                  onClick={getCommitment}
+                  disabled={usdcBalance === 0}
+                  style={usdcBalance === 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                >
+                  Deposit
+                </button>
+              ) : (
+                <button
+                  className="crypto-widget-button crypto-widget-button-primary"
+                  disabled
+                  style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                >
+                  Deposit
+                </button>
+              )}
             </div>
           ) : (
             <div className="crypto-widget-section active">

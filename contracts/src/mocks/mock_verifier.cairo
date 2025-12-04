@@ -8,7 +8,7 @@ mod MockGroth16VerifierBN254 {
     impl IGroth16VerifierBN254Impl of zstarkwarp::verifier_interface::IGroth16VerifierBN254<ContractState> {
         fn verify_groth16_proof_bn254(
             self: @ContractState, full_proof_with_hints: Span<felt252>,
-        ) -> Option<Span<u256>> {
+        ) -> (bool, Span<u256>) {
             // Mock verifier that always returns success
             // Return a dummy span of u256 values to simulate valid public inputs
             let mut public_inputs = ArrayTrait::new();
@@ -16,7 +16,7 @@ mod MockGroth16VerifierBN254 {
             public_inputs.append(123_u256);
             public_inputs.append(456_u256);
 
-            Option::Some(public_inputs.span())
+            (true, public_inputs.span())
         }
     }
 }

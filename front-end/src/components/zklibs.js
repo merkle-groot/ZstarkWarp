@@ -97,6 +97,7 @@ export function createCommitment() {
 
 // Dynamic import for SnarkJS
 export async function genProof(input) {
+  console.log("proof input: ", input);
   const snarkjs = await import('snarkjs');
   const wasmResponse = await fetch('/circuit/withdraw.wasm');
   const zkeyResponse = await fetch('/circuit/Withdraw_final.zkey');
