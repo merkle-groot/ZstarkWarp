@@ -354,11 +354,18 @@ const CryptoTransactionWidget = () => {
       // Step 5: Get commitment index
       toast.loading('Retrieving commitment index...', { id: 'get-index', duration: 10000 });
 
-      const index = await zstarkwarpContract.get_commitment_index(
-        commitment.commitment
-      );
-
-      toast.success('Commitment index retrieved!', { id: 'get-index', duration: 5000 });
+      let index;
+      try {
+        index = await zstarkwarpContract.get_commitment_index(
+          commitment.commitment
+        );
+        toast.success('Commitment index retrieved!', { id: 'get-index', duration: 5000 });
+      } catch (indexError) {
+        console.error('Failed to get commitment index:', indexError);
+        toast.error('Failed to get commitment index, but will still save note without index', { id: 'get-index', duration: 5000 });
+        // Use a placeholder index that can be updated later
+        index = "pending";
+      }
 
       // Step 6: Prepare and save note
       toast.loading('Creating and saving note file...', { id: 'save-note', duration: 5000 });
@@ -372,22 +379,44 @@ const CryptoTransactionWidget = () => {
         JSON.stringify(note, (_, v) => (typeof v === "bigint" ? v.toString() : v))
       );
 
-      // Download JSON
-      const json = JSON.stringify(safeNote, null, 2);
-      const blob = new Blob([json], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
+      // Enhanced download mechanism
+      try {
+        const json = JSON.stringify(safeNote, null, 2);
+        const blob = new Blob([json], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
 
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "note.json";
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `note_${Date.now()}.json`; // Add timestamp to avoid overwrites
+        a.style.display = 'none';
 
-      // Simulate click
-      a.click();
+        // Properly attach to DOM
+        document.body.appendChild(a);
 
-      // Cleanup
-      URL.revokeObjectURL(url);
+        // Ensure the click happens after a brief delay to allow DOM attachment
+        setTimeout(() => {
+          try {
+            a.click();
+            toast.success('Note file saved successfully!', { id: 'save-note', duration: 5000 });
+          } catch (downloadError) {
+            console.error('Download click failed:', downloadError);
+            toast.error('Failed to trigger download. Please check your browser settings.', { id: 'save-note', duration: 5000 });
+          } finally {
+            // Cleanup regardless of success
+            try {
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            } catch (cleanupError) {
+              console.error('Cleanup failed:', cleanupError);
+            }
+          }
+        }, 100);
 
-      toast.success('Note file saved successfully!', { id: 'save-note', duration: 5000 });
+      } catch (fileError) {
+        console.error('Failed to create download file:', fileError);
+        toast.error('Failed to create note file: ' + fileError.message, { id: 'save-note', duration: 5000 });
+      }
+
       toast.success('Deposit completed successfully!', { id: 'deposit-complete', duration: 5000 });
     } catch (e){
       console.log("error while creating commitment", e);
