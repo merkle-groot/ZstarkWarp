@@ -4,6 +4,7 @@
     "starknet": "^8.9.1"
   },
   "scripts": {
+    "build": "GENERATE_SOURCEMAP=false react-scripts build",
     "deploy:update": "node scripts/deployContracts.js update",
     "deploy:redeploy": "node scripts/deployContracts.js redeploy"
   },

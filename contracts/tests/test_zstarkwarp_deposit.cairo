@@ -1,10 +1,10 @@
 use starknet::{contract_address_const, ContractAddress, SyscallResultTrait};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, spy_events, EventSpyAssertionsTrait, start_cheat_caller_address, stop_cheat_caller_address};
 use snforge_std::Event;
-use zstarkwarp::zstarkwarp_deposit_interface::{IZstarkWarpDepositDispatcher, IZstarkWarpDepositDispatcherTrait};
-use zstarkwarp::zstarkwarp_deposit_interface::{IZstarkWarpDepositSafeDispatcher, IZstarkWarpDepositSafeDispatcherTrait};
-use zstarkwarp::mocks::usdc_token_interface::{IUSDCTokenDispatcher, IUSDCTokenDispatcherTrait};
-use zstarkwarp::merkle_tree::merkle_tree_interface::{IMerkleTreeDispatcher, IMerkleTreeDispatcherTrait};
+use zstarkwarp::interfaces::zstarkwarp_deposit_interface::{IZstarkWarpDepositDispatcher, IZstarkWarpDepositDispatcherTrait};
+use zstarkwarp::interfaces::zstarkwarp_deposit_interface::{IZstarkWarpDepositSafeDispatcher, IZstarkWarpDepositSafeDispatcherTrait};
+use zstarkwarp::interfaces::usdc_token_interface::{IUSDCTokenDispatcher, IUSDCTokenDispatcherTrait};
+use zstarkwarp::interfaces::merkle_tree_interface::{IMerkleTreeDispatcher, IMerkleTreeDispatcherTrait};
 
 // use snforge_std::{start_prank, stop_prank, CheatTarget};
 

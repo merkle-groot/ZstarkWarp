@@ -1,4 +1,4 @@
-use super::merkle_tree_interface::IMerkleTree;
+use zstarkwarp::interfaces::merkle_tree_interface::IMerkleTree;
 
 /// Incremental merkle tree
 #[starknet::component] 

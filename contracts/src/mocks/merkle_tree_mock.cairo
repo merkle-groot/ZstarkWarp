@@ -1,7 +1,7 @@
 #[starknet::contract]
 pub mod MerkleTreeMock {
-    use crate::merkle_tree::merkle_tree::MerkleTreeComponent;
-    use crate::mocks::merkle_tree_mock_interface::IMerkleTreeMock;
+    use zstarkwarp::merkle_tree::merkle_tree::MerkleTreeComponent;
+    use zstarkwarp::interfaces::merkle_tree_mock_interface::IMerkleTreeMock;
     component!(path: MerkleTreeComponent, storage: merkleTree, event: merkleTreeEvent);
 
     #[storage]

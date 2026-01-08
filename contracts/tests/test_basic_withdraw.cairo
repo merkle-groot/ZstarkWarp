@@ -1,9 +1,8 @@
 use starknet::{contract_address_const, ContractAddress, SyscallResultTrait};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address, stop_cheat_caller_address};
-use zstarkwarp::zstarkwarp_withdraw_interface::{IZstarkWarpDWithdrawDispatcher, IZstarkWarpDWithdrawDispatcherTrait};
-use zstarkwarp::zstarkwarp::ZstarkWarp::{WithdrawalRequest, WithdrawalInfo};
-use zstarkwarp::verifier_interface::{IGroth16VerifierBN254Dispatcher, IGroth16VerifierBN254DispatcherTrait};
-use zstarkwarp::mocks::usdc_token_interface::{IUSDCTokenDispatcher, IUSDCTokenDispatcherTrait};
+use zstarkwarp::interfaces::zstarkwarp_withdraw_interface::{IZstarkWarpDWithdrawDispatcher, IZstarkWarpDWithdrawDispatcherTrait};
+use zstarkwarp::interfaces::zstarkwarp_deposit_interface::{IZstarkWarpDepositDispatcher, IZstarkWarpDepositDispatcherTrait};
+use zstarkwarp::interfaces::usdc_token_interface::{IUSDCTokenDispatcher, IUSDCTokenDispatcherTrait};
 
 fn get_owner_address() -> ContractAddress {
     contract_address_const::<1000>()
@@ -41,7 +40,7 @@ fn deploy_withdraw_contract(calldata: Array<felt252>) -> ContractAddress {
     let usdc_address = deploy_mock_usdc_contract(get_owner_address(), usdc_deposit_amount);
     let fee = 5_000_000_000_000_u256;
     let calculated_fee = 500_000_000_000_000_u256;
-    let calculated_user_amount = usdc_deposit_amount - calculated_fee;
+    let _calculated_user_amount = usdc_deposit_amount - calculated_fee;
     let verifier = deploy_mock_verifier_contract();
     let cooloff_time = 3600_u64;
 
@@ -67,20 +66,15 @@ fn approve_usdc(user: ContractAddress, zstarkwarp_address: ContractAddress, usdc
     stop_cheat_caller_address(usdc_address);
 }
 
-#[test]
-fn test_basic_withdraw_flow() {
+fn setup_withdraw_calldata() -> Array<felt252> {
     let mut calldata = ArrayTrait::new();
-
     let height = 18_u64;
-    let usdc_deposit_amount = 100_000_000_000_000_000_u256;
+    let usdc_deposit_amount = 100_000_000_000_000_000_000_u256;
     let usdc_address = deploy_mock_usdc_contract(get_owner_address(), usdc_deposit_amount);
-    let fee = 5_000_000_000_000_u256;
-    let calculated_fee = 500_000_000_000_000_u256;
-    let calculated_user_amount = usdc_deposit_amount - calculated_fee;
+    let fee = 5_000_000_000_000_000_u256;
     let verifier = deploy_mock_verifier_contract();
     let cooloff_time = 3600_u64;
 
-    
     height.serialize(ref calldata);
     usdc_address.serialize(ref calldata);
     usdc_deposit_amount.serialize(ref calldata);
@@ -88,9 +82,19 @@ fn test_basic_withdraw_flow() {
     fee.serialize(ref calldata);
     verifier.serialize(ref calldata);
     cooloff_time.serialize(ref calldata);
+    calldata
+}
 
+#[test]
+fn test_basic_withdraw_flow() {
+    // Deploy the withdraw contract which will create its own USDC instance
+    let calldata = setup_withdraw_calldata();
     let withdraw_address = deploy_withdraw_contract(calldata);
     let withdraw_dispatcher = IZstarkWarpDWithdrawDispatcher { contract_address: withdraw_address };
+    let deposit_dispatcher = IZstarkWarpDepositDispatcher { contract_address: withdraw_address };
+
+    // Get the USDC address that the contract is using
+    let (usdc_address, _) = deposit_dispatcher.get_token_details();
 
     // Test the withdrawal flow
     let solver = get_alice_address();

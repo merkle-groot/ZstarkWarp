@@ -1,10 +1,10 @@
 use starknet::{ContractAddress, SyscallResultTrait};
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
-use zstarkwarp::mocks::merkle_tree_mock_interface::{
+use zstarkwarp::interfaces::merkle_tree_mock_interface::{
     IMerkleTreeMockDispatcher, 
     IMerkleTreeMockDispatcherTrait
 };
-use zstarkwarp::merkle_tree::merkle_tree_interface::{
+use zstarkwarp::interfaces::merkle_tree_interface::{
     IMerkleTreeDispatcher,
     IMerkleTreeDispatcherTrait
 };

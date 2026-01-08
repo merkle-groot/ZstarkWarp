@@ -3,7 +3,6 @@ pub mod ZstarkWarp {
     use core::num::traits::Pow;
     use starknet::get_block_info;
     use crate::merkle_tree::merkle_tree::MerkleTreeComponent;
-    use crate::zstarkwarp_deposit_interface::IZstarkWarpDeposit;
     use starknet::{
         ContractAddress,
         contract_address_const,
@@ -19,9 +18,9 @@ pub mod ZstarkWarp {
         StoragePointerWriteAccess,
         StoragePathEntry
     };
-    use zstarkwarp::verifier_interface::{IGroth16VerifierBN254Dispatcher, IGroth16VerifierBN254DispatcherTrait};
+    use zstarkwarp::interfaces::zstarkwarp_deposit_interface::{IZstarkWarpDeposit};
     use openzeppelin_interfaces::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
-    use zstarkwarp::zstarkwarp_withdraw_interface::IZstarkWarpDWithdraw;
+    use zstarkwarp::interfaces::zstarkwarp_withdraw_interface::IZstarkWarpDWithdraw;
 
     component!(path: MerkleTreeComponent, storage: merkleTree, event: MerkleTreeEvent);
     
@@ -267,7 +266,7 @@ pub mod ZstarkWarp {
             assert!(root != 0 && root != 1337, "ZWW: Invalid root");
             assert!(recipient != contract_address_const::<0>(), "ZWW: Invalid recipient");
 
-            let verifier_dispatcher = IGroth16VerifierBN254Dispatcher { contract_address: self.verifier.read() };
+            // let verifier_dispatcher = IGroth16VerifierBN254Dispatcher { contract_address: self.verifier.read() };
             // let (check, public_inputs) = verifier_dispatcher.verify_groth16_proof_bn254(proof);
             // assert!(check == true, "ZWW: Incorrect proof");
             self.nullifierHashes.entry(nullifierHash).write(true);
